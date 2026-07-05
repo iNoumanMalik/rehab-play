@@ -1,75 +1,97 @@
-# React + TypeScript + Vite
+# RehabPlay
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Gamified physiotherapy platform using real-time motion tracking! Transform boring exercises into fun games.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Real-time Motion Tracking**: Uses MediaPipe Pose to track your body movements
+- **3 Interactive Games**:
+  - 🦋 Butterfly Catch - Improve hand-eye coordination
+  - 🍎 Fruit Reach - Increase range of motion
+  - 💪 Arm Raise Exercise - Build strength with repetition counting
+- **Beautiful UI**: Modern, responsive design with glass-morphism effects
+- **Accessible**: WCAG 2.1 compliant with proper ARIA labels
+- **Cross-Platform**: Works on desktop and mobile browsers
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19 + TypeScript
+- Vite (build tool)
+- Tailwind CSS (styling)
+- MediaPipe Tasks Vision (pose tracking)
+- HTML5 Canvas (game rendering)
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js >= 18
+- npm or yarn
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+1. Clone the repo:
+```bash
+git clone <your-repo-url>
+cd rehab-play
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. Install dependencies:
+```bash
+npm install
+```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3. Run development server:
+```bash
+npm run dev
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+4. Open your browser at [http://localhost:5173](http://localhost:5173)
+5. Allow webcam access when prompted!
+
+### Building for Production
+
+```bash
+npm run build
+```
+
+## Project Structure
 
 ```
+src/
+├── components/
+│   └── Webcam.tsx         # Webcam component
+├── games/
+│   ├── ButterflyCatch.tsx # Butterfly Catch game
+│   ├── FruitReach.tsx     # Fruit Reach game
+│   └── ArmRaiseExercise.tsx # Arm Raise game
+├── hooks/
+│   └── usePoseTracking.ts # Custom hook for pose tracking
+├── types/
+│   └── index.ts           # TypeScript type definitions
+├── utils/
+│   └── webcamManager.ts   # Singleton for managing webcam stream
+├── App.tsx                # Main app component
+├── main.tsx               # App entry point
+└── index.css              # Global styles (Tailwind directives)
+```
+
+## How to Use
+
+1. When you open the app, allow webcam permissions
+2. Wait for motion tracking to initialize
+3. Click on any game to start playing!
+4. Follow the game instructions
+5. Click "Stop Game" to return to the menu
+
+## Future Enhancements
+
+- Progress tracking dashboard
+- Therapist monitoring portal
+- AI-based exercise assessment
+- More games!
+- Mobile app support
+
+## License
+
+MIT
