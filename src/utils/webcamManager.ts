@@ -2,7 +2,7 @@
 let webcamStream: MediaStream | null = null;
 
 export const getWebcamStream = async (): Promise<MediaStream> => {
-  if (webcamStream) {
+  if (webcamStream && webcamStream.active) {
     return webcamStream;
   }
 
@@ -15,4 +15,11 @@ export const getWebcamStream = async (): Promise<MediaStream> => {
   });
 
   return webcamStream;
+};
+
+export const stopWebcamStream = () => {
+  if (webcamStream) {
+    webcamStream.getTracks().forEach(track => track.stop());
+    webcamStream = null;
+  }
 };

@@ -1,12 +1,13 @@
-
 import { useEffect, useRef } from 'react';
-import { getWebcamStream } from '../utils/webcamManager';
+import { getWebcamStream, stopWebcamStream } from '../utils/webcamManager';
 
 interface WebcamProps {
+  isCameraOn?: boolean;
   onVideoReady: (video: HTMLVideoElement) => void;
+  onVideoStopped?: () => void;
 }
 
-export const Webcam = ({ onVideoReady }: WebcamProps) => {
+export const Webcam = ({ isCameraOn = true, onVideoReady, onVideoStopped }: WebcamProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -30,12 +31,33 @@ export const Webcam = ({ onVideoReady }: WebcamProps) => {
       }
     };
 
-    initWebcam();
+    const disableWebcam = () => {
+      stopWebcamStream();
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      if (onVideoStopped) {
+        onVideoStopped();
+      }
+    };
+
+    if (isCameraOn) {
+      initWebcam();
+    } else {
+      disableWebcam();
+    }
 
     return () => {
       isMounted = false;
     };
-  }, [onVideoReady]);
+  }, [isCameraOn, onVideoReady, onVideoStopped]);
+
+  // Handle unmount cleanups
+  useEffect(() => {
+    return () => {
+      stopWebcamStream();
+    };
+  }, []);
 
   return (
     <video

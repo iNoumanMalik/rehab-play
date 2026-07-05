@@ -57,6 +57,7 @@ const STAT_CARDS: { key: keyof GameStats; label: string; suffix?: string; gradie
 ];
 
 function App() {
+  const [isCameraOn, setIsCameraOn] = useState(true);
   const [currentGame, setCurrentGame] = useState<GameType | null>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [stats, setStats] = useState<GameStats>({
@@ -109,6 +110,22 @@ function App() {
     setVideoReady(true);
   }, []);
 
+  const handleVideoStopped = useCallback(() => {
+    videoRef.current = null;
+    setVideoReady(false);
+  }, []);
+
+  const toggleCamera = () => {
+    setIsCameraOn(prev => {
+      const next = !prev;
+      if (!next) {
+        setCurrentGame(null);
+        setVideoReady(false);
+      }
+      return next;
+    });
+  };
+
   const handleScoreUpdate = useCallback((score: number) => {
     setStats(prev => ({ ...prev, score }));
   }, []);
@@ -142,9 +159,9 @@ function App() {
       {/* Header */}
       <header ref={headerRef} className="relative z-20 bg-[#070B1A]/80 backdrop-blur-xl border-b border-white/[0.08] sticky top-0 opacity-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              <div className="relative w-12 h-12">
+              <div className="relative w-12 h-12 flex-shrink-0">
                 <div className="absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 rounded-2xl animate-pulse opacity-60 blur-md" />
                 <div className="relative w-full h-full bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-xl border border-white/20">
                   <span className="text-2xl">⚡</span>
@@ -160,20 +177,31 @@ function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              {videoReady && (
-                <span className="flex items-center gap-2.5 px-4 py-2 bg-emerald-500/20 text-emerald-200 rounded-full text-xs sm:text-sm font-semibold border border-emerald-500/40 shadow-sm shadow-emerald-500/10">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleCamera}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold border transition-all duration-300 shadow-md cursor-pointer focus-visible:ring-4 focus-visible:ring-violet-500/50 outline-none ${
+                  isCameraOn
+                    ? 'bg-violet-500/20 hover:bg-violet-500/30 text-violet-200 border-violet-500/40 hover:border-violet-500/60'
+                    : 'bg-red-500/20 hover:bg-red-500/30 text-red-200 border-red-500/40 hover:border-red-500/60'
+                }`}
+              >
+                <span>{isCameraOn ? '📹 Turn Camera Off' : '📹 Turn Camera On'}</span>
+              </button>
+
+              {isCameraOn && videoReady && (
+                <span className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-500/20 text-emerald-200 rounded-full text-xs sm:text-sm font-semibold border border-emerald-500/40 shadow-sm shadow-emerald-500/10">
                   <span className="relative w-2.5 h-2.5">
                     <span className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-75" />
                     <span className="relative block w-2.5 h-2.5 bg-emerald-400 rounded-full" />
                   </span>
-                  Camera Active
+                  <span className="hidden sm:inline">Camera Active</span>
                 </span>
               )}
-              {!isReady && videoReady && (
-                <span className="flex items-center gap-2.5 px-4 py-2 bg-amber-500/20 text-amber-200 rounded-full text-xs sm:text-sm font-semibold border border-amber-500/40 shadow-sm shadow-amber-500/10 animate-pulse">
+              {isCameraOn && !isReady && videoReady && (
+                <span className="flex items-center gap-2 px-3.5 py-2.5 bg-amber-500/20 text-amber-200 rounded-full text-xs sm:text-sm font-semibold border border-amber-500/40 shadow-sm shadow-amber-500/10 animate-pulse">
                   <span className="w-2.5 h-2.5 bg-amber-400 rounded-full" />
-                  Loading Tracking Models
+                  Loading Pose
                 </span>
               )}
             </div>
@@ -182,32 +210,41 @@ function App() {
       </header>
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Webcam Setup & Loader */}
-        {!videoReady ? (
-          <div className="flex flex-col items-center justify-center min-h-[65vh] gap-8 bg-white/[0.02] border border-white/[0.06] rounded-3xl p-8 sm:p-12 shadow-2xl backdrop-blur-md">
-            <div className="relative">
-              <div className="w-24 h-24 border-[4px] border-violet-500/20 border-t-violet-400 rounded-full animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-3xl">📷</span>
-              </div>
+        {/* Webcam Disabled State */}
+        {!isCameraOn ? (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 bg-white/[0.02] border border-white/[0.06] rounded-3xl p-8 sm:p-12 shadow-2xl backdrop-blur-md text-center max-w-3xl mx-auto">
+            <div className="w-24 h-24 bg-red-500/10 border border-red-500/30 rounded-full flex items-center justify-center text-red-400 text-4xl shadow-inner">
+              🚫
             </div>
-            <div className="text-center max-w-lg">
+            <div className="max-w-lg">
               <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
-                Setting Up Your Rehabilitation Space
+                Camera is Disabled
               </h2>
-              <p className="text-white/70 text-base sm:text-lg leading-relaxed">
-                Please allow camera access when prompted by your browser to enable live motion-controlled activities.
+              <p className="text-white/70 text-base sm:text-lg leading-relaxed mb-6 font-medium">
+                RehabPlay requires a live webcam feed to track and translate your body movements into in-game gestures. Please enable your camera to start playing.
               </p>
-            </div>
-            <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-xl border border-white/10 opacity-0 pointer-events-none absolute">
-              <Webcam onVideoReady={handleVideoReady} />
+              <button
+                onClick={toggleCamera}
+                className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-extrabold rounded-2xl border border-violet-500/40 shadow-lg hover:shadow-violet-500/25 transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
+              >
+                📹 Enable Camera
+              </button>
             </div>
           </div>
         ) : (
           <div className="space-y-8 sm:space-y-12">
             {/* Camera View and Game Screen */}
             <div className="relative rounded-3xl overflow-hidden bg-black/60 shadow-2xl border border-white/[0.1] aspect-[16/9] max-h-[65vh] mx-auto flex items-center justify-center">
-              <Webcam onVideoReady={handleVideoReady} />
+              {!videoReady && (
+                <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-20">
+                  <div className="text-center p-6 max-w-sm">
+                    <div className="w-16 h-16 border-[4px] border-violet-500/20 border-t-violet-400 rounded-full animate-spin mx-auto mb-6" />
+                    <h3 className="text-xl font-bold text-violet-200">Setting Up Your Rehabilitation Space</h3>
+                    <p className="text-white/70 text-sm mt-3 leading-relaxed">Please allow camera access when prompted by your browser.</p>
+                  </div>
+                </div>
+              )}
+              <Webcam isCameraOn={isCameraOn} onVideoReady={handleVideoReady} onVideoStopped={handleVideoStopped} />
 
               {!isReady && !currentGame && (
                 <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-15">
@@ -252,7 +289,7 @@ function App() {
                 <p className="text-white/80 text-sm sm:text-base font-medium">
                   {currentGame === 'butterfly' && "💡 Stretch and move your hands over the flying butterflies to catch them. Great for wrist and elbow flexibility."}
                   {currentGame === 'fruit' && "💡 Reach out with either hand to touch the floating fruits. Promotes full shoulder flexion and upper arm extension."}
-                  {currentGame === 'arm-raise' && "💡 Stand in clear view of the camera. Raise either arm straight up above the line, hold it, then lower it fully to count a repetition."}
+                  {currentGame === 'arm-raise' && "💡 Stand in view of the camera. Raise either arm straight up above the line, hold it, then lower it fully to count a repetition."}
                 </p>
               </div>
             )}
@@ -277,9 +314,9 @@ function App() {
                         key={game}
                         data-card
                         onClick={() => startGame(game)}
-                        className={`group relative bg-gradient-to-br ${info.gradient} border ${info.border} rounded-3xl p-8 text-left transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1.5 hover:shadow-2xl ${info.hoverGlow} backdrop-blur-md cursor-pointer`}
+                        className={`group relative bg-gradient-to-br ${info.gradient} border ${info.border} rounded-3xl p-8 text-left transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1.5 hover:shadow-2xl ${info.hoverGlow} backdrop-blur-md cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50`}
                       >
-                        <div className="absolute top-6 right-6 text-5xl transform group-hover:scale-120 group-hover:rotate-6 transition-all duration-300">
+                        <div className="absolute top-6 right-6 text-5xl transform group-hover:scale-125 group-hover:rotate-6 transition-all duration-300">
                           {info.icon}
                         </div>
 
@@ -337,7 +374,7 @@ function App() {
                 <div className="flex justify-center">
                   <button
                     onClick={stopGame}
-                    className="group relative px-10 py-4 bg-white/[0.05] hover:bg-red-500/10 text-white hover:text-red-200 font-extrabold text-base sm:text-lg rounded-2xl transition-all duration-300 border border-white/[0.1] hover:border-red-500/30 overflow-hidden shadow-lg shadow-black/20 cursor-pointer"
+                    className="group relative px-10 py-4 bg-white/[0.05] hover:bg-red-500/10 text-white hover:text-red-200 font-extrabold text-base sm:text-lg rounded-2xl transition-all duration-300 border border-white/[0.1] hover:border-red-500/30 overflow-hidden shadow-lg shadow-black/20 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-red-500/50"
                   >
                     <span className="relative z-10 flex items-center gap-2.5">
                       <svg className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
