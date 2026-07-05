@@ -62,7 +62,7 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
       animationId = requestAnimationFrame(detectPose);
     };
 
-    if (isReady && videoRef.current) {
+    if (isReady) {
       animationId = requestAnimationFrame(detectPose);
     }
 

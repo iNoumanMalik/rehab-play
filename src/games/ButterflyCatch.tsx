@@ -72,6 +72,11 @@ export const ButterflyCatch = ({ landmarks, onScoreUpdate, onSuccessUpdate }: Bu
     const loop = (time: number) => {
       timeRef.current = time;
 
+      if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const lm = landmarksRef.current;
@@ -82,11 +87,11 @@ export const ButterflyCatch = ({ landmarks, onScoreUpdate, onSuccessUpdate }: Bu
 
       if (lm.length > 16) {
         const wrist = lm[LANDMARK_RIGHT_WRIST];
-        handX = wrist.x * canvas.width;
+        handX = (1 - wrist.x) * canvas.width;
         handY = wrist.y * canvas.height;
 
         const wrist2 = lm[LANDMARK_LEFT_WRIST];
-        handX2 = wrist2.x * canvas.width;
+        handX2 = (1 - wrist2.x) * canvas.width;
         handY2 = wrist2.y * canvas.height;
 
         const gradient = ctx.createRadialGradient(handX, handY, 0, handX, handY, 40);

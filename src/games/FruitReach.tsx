@@ -94,12 +94,19 @@ export const FruitReach = ({ landmarks, onScoreUpdate, onSuccessUpdate }: FruitR
       ctx.lineCap = 'round';
       ctx.stroke();
 
-      ctx.font = '14px system-ui';
+      ctx.font = '28px system-ui';
       ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(typeInfo.label, f.x, f.y + pulse + 2);
       ctx.restore();
     };
 
     const loop = () => {
+      if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const lm = landmarksRef.current;
@@ -110,10 +117,10 @@ export const FruitReach = ({ landmarks, onScoreUpdate, onSuccessUpdate }: FruitR
 
       if (lm.length > 16) {
         const wrist = lm[LANDMARK_RIGHT_WRIST];
-        handX = wrist.x * canvas.width;
+        handX = (1 - wrist.x) * canvas.width;
         handY = wrist.y * canvas.height;
         const wrist2 = lm[LANDMARK_LEFT_WRIST];
-        handX2 = wrist2.x * canvas.width;
+        handX2 = (1 - wrist2.x) * canvas.width;
         handY2 = wrist2.y * canvas.height;
 
         const drawHand = (hx: number, hy: number) => {

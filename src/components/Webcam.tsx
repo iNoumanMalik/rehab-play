@@ -40,7 +40,7 @@ export const Webcam = ({ onVideoReady }: WebcamProps) => {
   return (
     <video
       ref={videoRef}
-      className="w-full h-full object-cover"
+      className="w-full h-full object-cover -scale-x-100"
       playsInline
       muted
       autoPlay

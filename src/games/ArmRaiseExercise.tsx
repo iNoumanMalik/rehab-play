@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import type { PoseLandmark } from '../types';
 import {
@@ -21,11 +20,14 @@ export const ArmRaiseExercise = ({ landmarks, onScoreUpdate, onRepetitionsUpdate
   const animRef = useRef<number>(0);
   const scoreRef = useRef(0);
   const repsRef = useRef(0);
-  const lastScoreRef = useRef(0);
-  const lastRepsRef = useRef(0);
-  const armRaisedRef = useRef(false);
+  
+  // Track raised state and hold start times separately for left and right arms
+  const rightArmRaisedRef = useRef(false);
+  const leftArmRaisedRef = useRef(false);
+  const rightHoldStartRef = useRef(0);
+  const leftHoldStartRef = useRef(0);
+  
   const landmarksRef = useRef(landmarks);
-  const holdStartRef = useRef(0);
 
   useEffect(() => {
     landmarksRef.current = landmarks;
@@ -55,6 +57,11 @@ export const ArmRaiseExercise = ({ landmarks, onScoreUpdate, onRepetitionsUpdate
     window.addEventListener('resize', resize);
 
     const loop = () => {
+      if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const lm = landmarksRef.current;
@@ -67,32 +74,51 @@ export const ArmRaiseExercise = ({ landmarks, onScoreUpdate, onRepetitionsUpdate
         const lWrist = lm[LANDMARK_LEFT_WRIST];
 
         const rAngle = calcAngle(rShoulder, rElbow, rWrist);
+        const lAngle = calcAngle(lShoulder, lElbow, lWrist);
 
         const rWristY = rWrist.y * canvas.height;
+        const lWristY = lWrist.y * canvas.height;
         const targetY = canvas.height * 0.15;
 
-        const isRaised = rWristY < targetY;
-        const isLowered = rWristY > targetY + 80;
+        // Repetition tracking for right arm
+        const isRightRaised = rWristY < targetY;
+        const isRightLowered = rWristY > targetY + 80;
 
-        if (isRaised && !armRaisedRef.current) {
-          armRaisedRef.current = true;
-          holdStartRef.current = Date.now();
-        } else if (isLowered && armRaisedRef.current) {
-          if (Date.now() - holdStartRef.current > 300) {
+        if (isRightRaised && !rightArmRaisedRef.current) {
+          rightArmRaisedRef.current = true;
+          rightHoldStartRef.current = Date.now();
+        } else if (isRightLowered && rightArmRaisedRef.current) {
+          if (Date.now() - rightHoldStartRef.current > 300) {
             repsRef.current += 1;
             scoreRef.current += 20;
-            lastRepsRef.current = repsRef.current;
-            lastScoreRef.current = scoreRef.current;
             onRepetitionsUpdate(repsRef.current);
             onScoreUpdate(scoreRef.current);
           }
-          armRaisedRef.current = false;
+          rightArmRaisedRef.current = false;
         }
 
+        // Repetition tracking for left arm
+        const isLeftRaised = lWristY < targetY;
+        const isLeftLowered = lWristY > targetY + 80;
+
+        if (isLeftRaised && !leftArmRaisedRef.current) {
+          leftArmRaisedRef.current = true;
+          leftHoldStartRef.current = Date.now();
+        } else if (isLeftLowered && leftArmRaisedRef.current) {
+          if (Date.now() - leftHoldStartRef.current > 300) {
+            repsRef.current += 1;
+            scoreRef.current += 20;
+            onRepetitionsUpdate(repsRef.current);
+            onScoreUpdate(scoreRef.current);
+          }
+          leftArmRaisedRef.current = false;
+        }
+
+        // Draw target line
         const grad = ctx.createLinearGradient(0, targetY, canvas.width, targetY);
-        grad.addColorStop(0, 'rgba(76, 175, 80, 0.5)');
-        grad.addColorStop(0.5, 'rgba(76, 175, 80, 0.8)');
-        grad.addColorStop(1, 'rgba(76, 175, 80, 0.5)');
+        grad.addColorStop(0, 'rgba(76, 175, 80, 0.3)');
+        grad.addColorStop(0.5, 'rgba(76, 175, 80, 0.7)');
+        grad.addColorStop(1, 'rgba(76, 175, 80, 0.3)');
         ctx.beginPath();
         ctx.moveTo(0, targetY);
         ctx.lineTo(canvas.width, targetY);
@@ -102,16 +128,23 @@ export const ArmRaiseExercise = ({ landmarks, onScoreUpdate, onRepetitionsUpdate
         ctx.stroke();
         ctx.setLineDash([]);
 
+        // Target Line Label
+        ctx.fillStyle = 'rgba(76, 175, 80, 0.9)';
+        ctx.font = 'bold 12px system-ui, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('TARGET HEIGHT', canvas.width - 20, targetY - 8);
+
+        // Helper function to draw mirrored skeleton
         const drawSkeleton = (shoulder: PoseLandmark, elbow: PoseLandmark, wrist: PoseLandmark, color: string) => {
-          const sX = shoulder.x * canvas.width;
+          const sX = (1 - shoulder.x) * canvas.width;
           const sY = shoulder.y * canvas.height;
-          const eX = elbow.x * canvas.width;
+          const eX = (1 - elbow.x) * canvas.width;
           const eY = elbow.y * canvas.height;
-          const wX = wrist.x * canvas.width;
+          const wX = (1 - wrist.x) * canvas.width;
           const wY = wrist.y * canvas.height;
           const wYNorm = wrist.y;
 
-          const isAbove = wYNorm < 0.2;
+          const isAbove = wYNorm < 0.15;
           const glowColor = isAbove ? 'rgba(76, 175, 80, 0.6)' : 'rgba(255, 255, 255, 0.1)';
 
           ctx.shadowColor = glowColor;
@@ -129,16 +162,19 @@ export const ArmRaiseExercise = ({ landmarks, onScoreUpdate, onRepetitionsUpdate
 
           ctx.shadowBlur = 0;
 
+          // Shoulder
           ctx.beginPath();
           ctx.arc(sX, sY, 14, 0, Math.PI * 2);
           ctx.fillStyle = '#FF5252';
           ctx.fill();
 
+          // Elbow
           ctx.beginPath();
           ctx.arc(eX, eY, 11, 0, Math.PI * 2);
           ctx.fillStyle = '#FF9800';
           ctx.fill();
 
+          // Wrist
           ctx.beginPath();
           ctx.arc(wX, wY, 16, 0, Math.PI * 2);
           ctx.fillStyle = isAbove ? '#4CAF50' : '#FFEB3B';
@@ -151,13 +187,16 @@ export const ArmRaiseExercise = ({ landmarks, onScoreUpdate, onRepetitionsUpdate
           ctx.fillText(statusText, wX, wY - 25);
         };
 
+        // Draw skeletons (mirroring ensures left/right labels align with the user visually)
+        // MediaPipe left wrist is index 15, right wrist is 16.
+        // We draw the user's right side (from the camera's perspective, this is drawn on screen left)
         drawSkeleton(rShoulder, rElbow, rWrist, '#64B5F6');
         drawSkeleton(lShoulder, lElbow, lWrist, '#EF5350');
 
         ctx.shadowBlur = 0;
 
         const repText = `Repetitions: ${repsRef.current}`;
-        const angleText = `Angle: ${Math.round(rAngle)}°`;
+        const angleText = `Right Angle: ${Math.round(rAngle)}° | Left Angle: ${Math.round(lAngle)}°`;
 
         ctx.fillStyle = 'rgba(255,255,255,0.9)';
         ctx.font = 'bold 22px system-ui, sans-serif';
@@ -168,12 +207,22 @@ export const ArmRaiseExercise = ({ landmarks, onScoreUpdate, onRepetitionsUpdate
         ctx.font = '16px system-ui, sans-serif';
         ctx.fillText(angleText, 20, 70);
 
-        if (armRaisedRef.current) {
-          const elapsed = Math.min(1, (Date.now() - holdStartRef.current) / 300);
+        // Display hold progress for whichever arms are currently raised
+        const holds = [];
+        if (rightArmRaisedRef.current) {
+          const elapsed = Math.min(1, (Date.now() - rightHoldStartRef.current) / 300);
+          holds.push(`Right Arm: ${Math.round(elapsed * 100)}%`);
+        }
+        if (leftArmRaisedRef.current) {
+          const elapsed = Math.min(1, (Date.now() - leftHoldStartRef.current) / 300);
+          holds.push(`Left Arm: ${Math.round(elapsed * 100)}%`);
+        }
+
+        if (holds.length > 0) {
           ctx.fillStyle = 'rgba(255,255,255,0.8)';
           ctx.font = 'bold 16px system-ui, sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText(`Hold... ${Math.round(elapsed * 100)}%`, canvas.width / 2, canvas.height - 40);
+          ctx.fillText(`Hold... ${holds.join(' | ')}`, canvas.width / 2, canvas.height - 40);
         }
       } else {
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
