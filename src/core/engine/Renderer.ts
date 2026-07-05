@@ -1,0 +1,76 @@
+export class Renderer {
+  static clear(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+    ctx.clearRect(0, 0, w, h);
+  }
+
+  static roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  static drawCircle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, alpha = 1): void {
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  static drawGlow(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string): void {
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+    grad.addColorStop(0, color + '40');
+    grad.addColorStop(1, color + '00');
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+
+  static drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, opts: {
+    color?: string;
+    size?: number;
+    weight?: string;
+    align?: CanvasTextAlign;
+    baseline?: CanvasTextBaseline;
+    alpha?: number;
+  } = {}): void {
+    const { color = '#fff', size = 20, weight = 'bold', align = 'left', baseline = 'top', alpha = 1 } = opts;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.font = `${weight} ${size}px system-ui, sans-serif`;
+    ctx.textAlign = align;
+    ctx.textBaseline = baseline;
+    ctx.fillText(text, x, y);
+    ctx.globalAlpha = 1;
+  }
+
+  static drawProgressBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, progress: number, color: string, bgColor = 'rgba(255,255,255,0.1)'): void {
+    Renderer.roundedRect(ctx, x, y, w, h, h / 2);
+    ctx.fillStyle = bgColor;
+    ctx.fill();
+    Renderer.roundedRect(ctx, x, y, w * Math.max(0, Math.min(1, progress)), h, h / 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  static drawHandCursor(ctx: CanvasRenderingContext2D, x: number, y: number, r = 35): void {
+    Renderer.drawGlow(ctx, x, y, r * 1.5, '#ffffff');
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
