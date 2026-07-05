@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
 import type { PoseLandmark } from '../types';
 
-export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement>) => {
+export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | null>) => {
   const [landmarks, setLandmarks] = useState<PoseLandmark[]>([]);
   const [isReady, setIsReady] = useState(false);
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null);
   const lastVideoTimeRef = useRef(-1);
+  const landmarksRef = useRef<PoseLandmark[]>([]);
 
   useEffect(() => {
     const loadPoseLandmarker = async () => {
@@ -21,7 +22,10 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement>) => 
             delegate: 'GPU'
           },
           runningMode: 'VIDEO',
-          numPoses: 1
+          numPoses: 1,
+          minPoseDetectionConfidence: 0.5,
+          minPosePresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
         });
         setIsReady(true);
       } catch (error) {
@@ -50,7 +54,9 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement>) => 
       const results = poseLandmarkerRef.current.detectForVideo(video, performance.now());
       
       if (results.landmarks && results.landmarks.length > 0) {
-        setLandmarks(results.landmarks[0]);
+        const lm = results.landmarks[0] as PoseLandmark[];
+        landmarksRef.current = lm;
+        setLandmarks(lm);
       }
 
       animationId = requestAnimationFrame(detectPose);
@@ -65,5 +71,5 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement>) => 
     };
   }, [isReady, videoRef]);
 
-  return { landmarks, isReady };
+  return { landmarks, landmarksRef, isReady };
 };

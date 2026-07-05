@@ -1,6 +1,7 @@
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import type { PoseLandmark } from '../types';
+import { LANDMARK_RIGHT_WRIST, LANDMARK_LEFT_WRIST } from '../types';
 
 interface Fruit {
   id: number;
@@ -8,6 +9,7 @@ interface Fruit {
   y: number;
   type: 'apple' | 'orange' | 'banana' | 'grape';
   collected: boolean;
+  collectedTime: number;
 }
 
 interface FruitReachProps {
@@ -16,151 +18,187 @@ interface FruitReachProps {
   onSuccessUpdate: (count: number) => void;
 }
 
+const FRUIT_TYPES = [
+  { type: 'apple' as const, color: '#FF4444', inner: '#CC0000', label: '🍎' },
+  { type: 'orange' as const, color: '#FF9800', inner: '#E65100', label: '🍊' },
+  { type: 'banana' as const, color: '#FFEB3B', inner: '#F9A825', label: '🍌' },
+  { type: 'grape' as const, color: '#9C27B0', inner: '#6A1B9A', label: '🍇' },
+];
+
 export const FruitReach = ({ landmarks, onScoreUpdate, onSuccessUpdate }: FruitReachProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [fruits, setFruits] = useState<Fruit[]>([]);
-  const [score, setScore] = useState(0);
-  const [successCount, setSuccessCount] = useState(0);
-  const animationRef = useRef<number | null>(null);
-  const lastSpawnRef = useRef<number>(0);
+  const animRef = useRef<number>(0);
+  const fruitsRef = useRef<Fruit[]>([]);
+  const scoreRef = useRef(0);
+  const successRef = useRef(0);
+  const lastSpawnRef = useRef(0);
+  const lastScoreRef = useRef(0);
+  const lastSuccessRef = useRef(0);
+  const landmarksRef = useRef(landmarks);
 
-  const fruitTypes = [
-    { type: 'apple' as const, color: '#FF4444' },
-    { type: 'orange' as const, color: '#FF9800' },
-    { type: 'banana' as const, color: '#FFEB3B' },
-    { type: 'grape' as const, color: '#9C27B0' }
-  ];
-
-  const spawnFruit = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const type = fruitTypes[Math.floor(Math.random() * fruitTypes.length)];
-    const newFruit: Fruit = {
-      id: Date.now() + Math.random(),
-      x: 100 + Math.random() * (canvas.width - 200),
-      y: 100 + Math.random() * (canvas.height - 200),
-      type: type.type,
-      collected: false
-    };
-    setFruits(prev => [...prev, newFruit]);
-  }, []);
-
-  const checkCollision = useCallback((fruit: Fruit, handX: number, handY: number) => {
-    const dx = fruit.x - handX;
-    const dy = fruit.y - handY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    return distance < 40 + 30;
-  }, []);
-
-  const drawFruit = (ctx: CanvasRenderingContext2D, fruit: Fruit) => {
-    const type = fruitTypes.find(t => t.type === fruit.type);
-    if (!type) return;
-
-    ctx.beginPath();
-    ctx.arc(fruit.x, fruit.y, 40, 0, Math.PI * 2);
-    ctx.fillStyle = type.color;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(fruit.x - 10, fruit.y - 10, 8, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(fruit.x, fruit.y - 40);
-    ctx.lineTo(fruit.x, fruit.y - 50);
-    ctx.strokeStyle = '#4CAF50';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-  };
+  useEffect(() => {
+    landmarksRef.current = landmarks;
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const resizeCanvas = () => {
+    const resize = () => {
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
     };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    resize();
+    window.addEventListener('resize', resize);
 
-    const animate = (time: number) => {
+    const spawnFruit = () => {
+      const typeInfo = FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
+      const f: Fruit = {
+        id: Date.now() + Math.random(),
+        x: 80 + Math.random() * (canvas.width - 160),
+        y: 80 + Math.random() * (canvas.height - 160),
+        type: typeInfo.type,
+        collected: false,
+        collectedTime: 0,
+      };
+      fruitsRef.current.push(f);
+    };
+
+    const drawFruit = (f: Fruit) => {
+      const typeInfo = FRUIT_TYPES.find(t => t.type === f.type);
+      if (!typeInfo) return;
+
+      const pulse = Math.sin(Date.now() / 300 + f.id) * 3;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(f.x, f.y + pulse, 35, 0, Math.PI * 2);
+      ctx.fillStyle = typeInfo.color;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(f.x - 8, f.y - 10 + pulse, 7, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y - 35 + pulse);
+      ctx.lineTo(f.x + 3, f.y - 48 + pulse);
+      ctx.strokeStyle = '#4CAF50';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      ctx.font = '14px system-ui';
+      ctx.textAlign = 'center';
+      ctx.restore();
+    };
+
+    const loop = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (time - lastSpawnRef.current > 3000) {
-        spawnFruit();
-        lastSpawnRef.current = time;
-      }
-
+      const lm = landmarksRef.current;
       let handX = -1000;
       let handY = -1000;
-      if (landmarks.length > 16) {
-        const wrist = landmarks[15];
+      let handX2 = -1000;
+      let handY2 = -1000;
+
+      if (lm.length > 16) {
+        const wrist = lm[LANDMARK_RIGHT_WRIST];
         handX = wrist.x * canvas.width;
         handY = wrist.y * canvas.height;
+        const wrist2 = lm[LANDMARK_LEFT_WRIST];
+        handX2 = wrist2.x * canvas.width;
+        handY2 = wrist2.y * canvas.height;
 
-        ctx.beginPath();
-        ctx.arc(handX, handY, 30, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        const drawHand = (hx: number, hy: number) => {
+          ctx.beginPath();
+          ctx.arc(hx, hy, 30, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.15)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        };
+        drawHand(handX, handY);
+        drawHand(handX2, handY2);
       }
 
-      setFruits(prev => {
-        let newScore = score;
-        let newSuccess = successCount;
-        const updated = prev
-          .map(f => {
-            if (f.collected) return f;
-
-            if (checkCollision(f, handX, handY)) {
-              newScore += 15;
-              newSuccess += 1;
-              return { ...f, collected: true };
-            }
-
-            return f;
-          })
-          .filter(f => !f.collected || Date.now() - f.id < 500);
-
-        if (newScore !== score) {
-          setScore(newScore);
-          onScoreUpdate(newScore);
+      if (Date.now() - lastSpawnRef.current > 2500) {
+        if (fruitsRef.current.filter(f => !f.collected).length < 8) {
+          spawnFruit();
         }
-        if (newSuccess !== successCount) {
-          setSuccessCount(newSuccess);
-          onSuccessUpdate(newSuccess);
+        lastSpawnRef.current = Date.now();
+      }
+
+      const fruits = fruitsRef.current;
+      for (let i = fruits.length - 1; i >= 0; i--) {
+        const f = fruits[i];
+        if (f.collected) {
+          if (Date.now() - f.collectedTime > 500) {
+            fruits.splice(i, 1);
+          }
+          continue;
         }
 
-        return updated;
-      });
+        const dist = 40 + 30;
+        let collected = false;
+        const dx = f.x - handX;
+        const dy = f.y - handY;
+        if (Math.sqrt(dx * dx + dy * dy) < dist) collected = true;
 
-      fruits.forEach(f => {
-        if (!f.collected) {
-          drawFruit(ctx, f);
+        if (!collected) {
+          const dx2 = f.x - handX2;
+          const dy2 = f.y - handY2;
+          if (Math.sqrt(dx2 * dx2 + dy2 * dy2) < dist) collected = true;
         }
-      });
 
-      animationRef.current = requestAnimationFrame(animate);
+        if (collected) {
+          f.collected = true;
+          f.collectedTime = Date.now();
+          scoreRef.current += 15;
+          successRef.current += 1;
+        }
+      }
+
+      for (const f of fruits) {
+        if (f.collected) {
+          const alpha = Math.max(0, 1 - (Date.now() - f.collectedTime) / 500);
+          ctx.globalAlpha = alpha;
+        }
+        drawFruit(f);
+        ctx.globalAlpha = 1;
+      }
+
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.font = 'bold 22px system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Score: ${scoreRef.current}`, 20, 40);
+
+      if (scoreRef.current !== lastScoreRef.current) {
+        lastScoreRef.current = scoreRef.current;
+        onScoreUpdate(scoreRef.current);
+      }
+      if (successRef.current !== lastSuccessRef.current) {
+        lastSuccessRef.current = successRef.current;
+        onSuccessUpdate(successRef.current);
+      }
+
+      animRef.current = requestAnimationFrame(loop);
     };
 
-    animationRef.current = requestAnimationFrame(animate);
+    animRef.current = requestAnimationFrame(loop);
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      cancelAnimationFrame(animRef.current);
+      window.removeEventListener('resize', resize);
     };
-  }, [landmarks, fruits, score, successCount, spawnFruit, checkCollision, onScoreUpdate, onSuccessUpdate]);
+  }, [onScoreUpdate, onSuccessUpdate]);
 
   return (
     <canvas
