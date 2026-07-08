@@ -1,20 +1,8 @@
-import type { GameMeta, PoseData } from '../types';
-
-export interface GameComponentProps {
-  poseDataRef: React.RefObject<PoseData | null>;
-  onScoreUpdate: (s: number) => void;
-  onSuccessUpdate: (c: number) => void;
-  onRepetitionsUpdate?: (c: number) => void;
-  onGameEnd: (stats: { score: number; level: number; maxCombo: number; accuracy: number; feedback: string[] }) => void;
-  onFeedback: (m: string[]) => void;
-  onComboUpdate: (c: number, m: number) => void;
-}
-
-export interface GameModule {
-  id: string;
-  meta: GameMeta;
-  component: React.ComponentType<GameComponentProps>;
-}
+import type { GameMeta } from '../types';
+import type { GameRegistration } from '../core/exercise';
+import { butterflyGame } from './butterfly-rescue/butterflyGame';
+import { fruitGame } from './fruit-harvest/fruitGame';
+import { crystalGame } from './crystal-guardian/crystalGame';
 
 const GAME_META: Record<string, GameMeta> = {
   'butterfly-rescue': {
@@ -55,6 +43,12 @@ const GAME_META: Record<string, GameMeta> = {
   },
 };
 
+const REGISTRATIONS: Record<string, GameRegistration> = {
+  'butterfly-rescue': butterflyGame,
+  'fruit-harvest': fruitGame,
+  'crystal-guardian': crystalGame,
+};
+
 export function getGameMeta(id: string): GameMeta | undefined {
   return GAME_META[id];
 }
@@ -63,16 +57,8 @@ export function getAllGameMeta(): GameMeta[] {
   return Object.values(GAME_META);
 }
 
-const gameLoaders: Record<string, () => Promise<GameModule>> = {};
-
-export function registerGameLoader(id: string, loader: () => Promise<GameModule>): void {
-  gameLoaders[id] = loader;
-}
-
-export function getGameLoader(id: string): (() => Promise<GameModule>) | undefined {
-  return gameLoaders[id];
-}
-
-export function getRegisteredIds(): string[] {
-  return Object.keys(gameLoaders);
+export function getGameRegistration(id: string): GameRegistration {
+  const reg = REGISTRATIONS[id];
+  if (!reg) throw new Error(`Unknown game: ${id}`);
+  return reg;
 }

@@ -3,25 +3,32 @@ import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { PoseEngine } from '../core/pose/PoseEngine';
 import type { PoseLandmark, PoseData } from '../types';
 
+// Pin the wasm bundle to the installed @mediapipe/tasks-vision version so the
+// runtime and the loader stay in lockstep.
+const TASKS_VISION_VERSION = '0.10.35';
+const WASM_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${TASKS_VISION_VERSION}/wasm`;
+const MODEL_URL =
+  'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+
 export function usePoseEngine(videoRef: React.RefObject<HTMLVideoElement | null>) {
-  const [poseData, setPoseData] = useState<PoseData | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const poseEngineRef = useRef(new PoseEngine());
   const landmarkerRef = useRef<PoseLandmarker | null>(null);
   const animRef = useRef(0);
   const lastTimeRef = useRef(-1);
+  // Pose data is shared with games via this ref (read every frame inside their
+  // own rAF loops) so it deliberately does NOT trigger React re-renders.
   const poseDataRef = useRef<PoseData | null>(null);
 
   useEffect(() => {
     let mounted = true;
     const load = async () => {
       try {
-        const vision = await FilesetResolver.forVisionTasks(
-          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm',
-        );
+        const vision = await FilesetResolver.forVisionTasks(WASM_URL);
         const landmarker = await PoseLandmarker.createFromOptions(vision, {
           baseOptions: {
-            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+            modelAssetPath: MODEL_URL,
             delegate: 'GPU',
           },
           runningMode: 'VIDEO',
@@ -36,6 +43,7 @@ export function usePoseEngine(videoRef: React.RefObject<HTMLVideoElement | null>
         }
       } catch (e) {
         console.error('Failed to load pose landmarker:', e);
+        if (mounted) setError('Motion tracking failed to load. Check your connection and try again.');
       }
     };
     load();
@@ -63,9 +71,7 @@ export function usePoseEngine(videoRef: React.RefObject<HTMLVideoElement | null>
 
       if (results.landmarks && results.landmarks.length > 0) {
         const raw = results.landmarks[0] as PoseLandmark[];
-        const processed = poseEngineRef.current.process(raw);
-        poseDataRef.current = processed;
-        setPoseData(processed);
+        poseDataRef.current = poseEngineRef.current.process(raw);
       }
 
       animRef.current = requestAnimationFrame(loop);
@@ -79,5 +85,5 @@ export function usePoseEngine(videoRef: React.RefObject<HTMLVideoElement | null>
     poseEngineRef.current.reset();
   }, []);
 
-  return { poseData, poseDataRef, isReady, resetPose };
+  return { poseDataRef, isReady, error, resetPose };
 }
