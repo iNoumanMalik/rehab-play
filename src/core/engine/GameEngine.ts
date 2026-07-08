@@ -52,32 +52,38 @@ export class GameEngine {
   }
 
   pause(): void {
+    if (this._paused) return;
     this._paused = true;
+    // Stop the rAF chain entirely rather than let it keep ticking idle — see
+    // the note on `loop` for why resuming used to double the update rate.
+    cancelAnimationFrame(this.animFrameId);
   }
 
   resume(): void {
-    if (this._paused) {
-      this._paused = false;
-      this.lastTime = performance.now();
-      this.loop(performance.now());
-    }
+    if (!this._paused) return;
+    this._paused = false;
+    this.lastTime = performance.now();
+    this.animFrameId = requestAnimationFrame(this.loop);
   }
 
   resize(): void {
     if (this.resizeHandler) this.resizeHandler();
   }
 
+  // While paused, `pause()` cancels the scheduled frame and nothing re-requests
+  // one, so this never fires until `resume()` kicks off a single fresh chain.
+  // (An earlier version rescheduled unconditionally here and had `resume()`
+  // invoke `loop` directly too, which briefly ran two concurrent rAF chains —
+  // silently doubling update() calls per frame after every pause/resume.)
   private loop = (now: number): void => {
-    if (!this._running) return;
+    if (!this._running || this._paused) return;
 
-    if (!this._paused) {
-      const dt = Math.min((now - this.lastTime) / 1000, 0.05);
-      this.lastTime = now;
+    const dt = Math.min((now - this.lastTime) / 1000, 0.05);
+    this.lastTime = now;
 
-      this.updateFn?.(dt);
-      if (this.ctx && this.renderFn) {
-        this.renderFn(this.ctx);
-      }
+    this.updateFn?.(dt);
+    if (this.ctx && this.renderFn) {
+      this.renderFn(this.ctx);
     }
 
     this.animFrameId = requestAnimationFrame(this.loop);

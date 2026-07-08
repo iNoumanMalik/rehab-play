@@ -67,11 +67,12 @@ export function usePoseEngine(videoRef: React.RefObject<HTMLVideoElement | null>
       }
 
       lastTimeRef.current = video.currentTime;
-      const results = landmarker.detectForVideo(video, performance.now());
+      const now = performance.now();
+      const results = landmarker.detectForVideo(video, now);
 
       if (results.landmarks && results.landmarks.length > 0) {
         const raw = results.landmarks[0] as PoseLandmark[];
-        poseDataRef.current = poseEngineRef.current.process(raw);
+        poseDataRef.current = poseEngineRef.current.process(raw, now);
       }
 
       animRef.current = requestAnimationFrame(loop);

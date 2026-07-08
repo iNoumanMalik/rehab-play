@@ -14,6 +14,14 @@ export interface SceneState {
   feedback: string[];
   over: boolean;
   won: boolean;
+  /** Present only for games with a health/lives mechanic (shown in the HUD). */
+  health?: { current: number; max: number };
+  /** Plain-language "what to do right now" for the always-visible objective banner. */
+  objective?: string;
+  /** On-screen point the MotionOverlay should draw a directional guide toward. */
+  guidance?: { x: number; y: number } | null;
+  /** True for exactly the tick a correct action registered — triggers the overlay's success flash. */
+  successPulse?: boolean;
 }
 
 /**

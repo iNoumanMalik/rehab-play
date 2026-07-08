@@ -69,8 +69,23 @@ export function upperBodyTracked(lm: PoseLandmark[], minVisibility = 0.4): boole
   return KEY_UPPER.every(i => (lm[i].visibility ?? 1) >= minVisibility);
 }
 
+/** Map any landmark index to mirrored on-screen canvas coordinates. */
+export function landmarkToScreen(lm: PoseLandmark[], index: number, w: number, h: number): Vec {
+  const p = lm[index];
+  return { x: (1 - p.x) * w, y: p.y * h };
+}
+
 /** Map a wrist landmark to mirrored on-screen canvas coordinates. */
 export function wristToScreen(lm: PoseLandmark[], side: 'left' | 'right', w: number, h: number): Vec {
-  const wrist = lm[WRIST[side]];
-  return { x: (1 - wrist.x) * w, y: wrist.y * h };
+  return landmarkToScreen(lm, WRIST[side], w, h);
+}
+
+/**
+ * A hand hit-test radius (px) that scales with how big the player appears on
+ * screen (closer to camera → bigger torso → bigger hitbox), instead of a
+ * fixed pixel constant that only felt right at one specific distance. This is
+ * the "larger, forgiving interaction zone" the detection should always have.
+ */
+export function handHitRadius(lm: PoseLandmark[], canvasHeight: number, baseFraction = 0.4): number {
+  return Math.max(30, torsoLength(lm) * canvasHeight * baseFraction);
 }

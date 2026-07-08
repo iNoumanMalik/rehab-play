@@ -29,6 +29,8 @@ export interface MovementData {
 export interface PoseData {
   landmarks: PoseLandmark[];
   smoothLandmarks: PoseLandmark[];
+  /** smoothLandmarks extrapolated ~80ms ahead to compensate for pipeline latency — use for on-screen hand position / hit-testing. */
+  predictedLandmarks: PoseLandmark[];
   angles: JointAngles;
   movement: MovementData;
   feedback: string[];

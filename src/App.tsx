@@ -5,6 +5,8 @@ import { Stage } from './components/layout/Stage';
 import { Header } from './components/layout/Header';
 import { FeedbackOverlay } from './components/game/FeedbackOverlay';
 import { ComboDisplay } from './components/game/ComboDisplay';
+import { VictoryScreen } from './components/game/VictoryScreen';
+import { ToastStack } from './components/ui/ToastStack';
 import { Dashboard } from './pages/Dashboard';
 import { GameSession } from './pages/GameSession';
 import { GameRunner } from './components/game/GameRunner';
@@ -19,15 +21,23 @@ function App() {
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
   const [currentGame, setCurrentGame] = useState<string | null>(null);
+  const [replayToken, setReplayToken] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { poseDataRef, isReady, error } = usePoseEngine(videoRef);
-  const session = useGameSession(currentGame as GameId | null, poseDataRef);
+  const sessionKey = currentGame ? `${currentGame}:${replayToken}` : null;
+  const session = useGameSession(sessionKey, poseDataRef);
   const [settings] = useSettings();
 
   useEffect(() => {
     audioManager.init();
     assets.preload(spriteManifest());
   }, []);
+
+  // The manual reduced-motion toggle also gates plain CSS animations app-wide
+  // (the OS media-query only covers what's already reduced by default).
+  useEffect(() => {
+    document.documentElement.classList.toggle('reduce-motion', settings.reducedMotion);
+  }, [settings.reducedMotion]);
 
   // Apply audio settings.
   useEffect(() => {
@@ -64,11 +74,17 @@ function App() {
 
   const startGame = (gameId: string) => setCurrentGame(gameId);
   const backToDashboard = () => setCurrentGame(null);
+  const playAgain = () => setReplayToken(t => t + 1);
+  const quitToDashboard = () => {
+    session.endSession();
+    backToDashboard();
+  };
 
   const games = getAllGameMeta();
 
   return (
     <div className="relative min-h-screen bg-[#070B1A] text-white overflow-x-hidden">
+      <ToastStack />
       {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className={`absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-violet-600/15 via-transparent to-cyan-600/15 rounded-full blur-[140px] ${settings.reducedMotion ? '' : 'animate-[pulse_10s_ease-in-out_infinite]'}`} />
@@ -118,13 +134,29 @@ function App() {
               {currentGame && (
                 <>
                   <GameRunner
-                    key={currentGame}
+                    key={sessionKey}
                     gameId={currentGame as GameId}
                     poseDataRef={poseDataRef}
+                    onQuit={quitToDashboard}
                     {...session.handlers}
                   />
-                  <FeedbackOverlay messages={session.feedback} visible={session.feedback.length > 0} />
-                  <ComboDisplay combo={session.combo} multiplier={session.multiplier} />
+                  {!session.gameOver && (
+                    <>
+                      <FeedbackOverlay messages={session.feedback} visible={session.feedback.length > 0} />
+                      <ComboDisplay combo={session.combo} multiplier={session.multiplier} />
+                    </>
+                  )}
+                  {session.gameOver && (
+                    <VictoryScreen
+                      gameId={currentGame as GameId}
+                      won={session.won}
+                      stats={session.stats}
+                      reward={session.reward}
+                      achievements={session.achievementsEarned}
+                      onPlayAgain={playAgain}
+                      onBack={backToDashboard}
+                    />
+                  )}
                 </>
               )}
             </Stage>

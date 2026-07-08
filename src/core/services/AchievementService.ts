@@ -1,4 +1,4 @@
-import type { GameStats, Achievement } from '../../types';
+import type { GameStats, Achievement, AchievementContext } from '../../types';
 import { StorageService } from './StorageService';
 
 const BUILTIN_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[] = [
@@ -10,7 +10,7 @@ const BUILTIN_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[] = [
   { id: 'score-500', title: 'Point Collector', description: 'Score 500 points in a session', icon: '⭐', condition: (s) => s.score >= 500 },
   { id: 'score-1000', title: 'High Scorer', description: 'Score 1000 points in a session', icon: '🌟', condition: (s) => s.score >= 1000 },
   { id: 'perfect-accuracy', title: 'Perfect Form', description: 'Achieve 100% accuracy', icon: '✨', condition: (s) => s.accuracy >= 100 },
-  { id: 'ten-sessions', title: 'Dedicated', description: 'Complete 10 sessions', icon: '📅', condition: ((_s: GameStats) => { void _s; return false; }) },
+  { id: 'ten-sessions', title: 'Dedicated', description: 'Complete 10 sessions', icon: '📅', condition: (_s, ctx) => ctx.totalSessions >= 10 },
   { id: 'speed-demon', title: 'Speed Demon', description: 'Catch 20 targets in one session', icon: '⚡', condition: (s) => s.successfulActions >= 20 },
 ];
 
@@ -19,13 +19,13 @@ export class AchievementService {
     StorageService.get<string[]>('unlocked_achievements', []),
   );
 
-  check(stats: GameStats): Achievement[] {
+  check(stats: GameStats, ctx: AchievementContext): Achievement[] {
     const newlyUnlocked: Achievement[] = [];
 
     for (const def of BUILTIN_ACHIEVEMENTS) {
       if (this.unlocked.has(def.id)) continue;
       const ach: Achievement = { ...def, unlocked: false };
-      if (def.condition(stats)) {
+      if (def.condition(stats, ctx)) {
         ach.unlocked = true;
         ach.unlockedAt = new Date().toISOString();
         this.unlocked.add(def.id);

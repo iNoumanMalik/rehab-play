@@ -1,42 +1,57 @@
 import type { PoseLandmark } from '../../types';
+import { OneEuroFilter } from './OneEuroFilter';
 
+interface Filters { x: OneEuroFilter; y: OneEuroFilter; z: OneEuroFilter; }
+
+/** Estimated camera+model+render pipeline latency to compensate for via prediction. */
+export const PREDICTION_HORIZON_SEC = 0.08;
+
+/**
+ * Smooths pose landmarks with a One-Euro filter instead of a moving average
+ * (see OneEuroFilter.ts for why). Also tracks each landmark's filtered
+ * velocity so callers can extrapolate a short-horizon predicted position —
+ * compensating for the ~1-2 frames of camera/model/render latency that made
+ * hits feel like they registered "late."
+ */
 export class JointSmoother {
-  private history: Map<number, { x: number[]; y: number[]; z: number[] }> = new Map();
-  private windowSize: number;
-  private readonly maxWindow = 5;
+  private filters: Map<number, Filters> = new Map();
+  private minCutoff: number;
+  private beta: number;
 
-  constructor(windowSize = 3) {
-    this.windowSize = Math.min(windowSize, this.maxWindow);
+  constructor(minCutoff = 1.2, beta = 0.4) {
+    this.minCutoff = minCutoff;
+    this.beta = beta;
   }
 
-  smooth(landmarks: PoseLandmark[]): PoseLandmark[] {
+  smooth(landmarks: PoseLandmark[], timestampMs: number): PoseLandmark[] {
     return landmarks.map((lm, i) => {
-      if (!this.history.has(i)) {
-        this.history.set(i, { x: [], y: [], z: [] });
+      if (!this.filters.has(i)) {
+        this.filters.set(i, {
+          x: new OneEuroFilter(this.minCutoff, this.beta),
+          y: new OneEuroFilter(this.minCutoff, this.beta),
+          z: new OneEuroFilter(this.minCutoff * 0.6, this.beta),
+        });
       }
-      const h = this.history.get(i)!;
-      h.x.push(lm.x);
-      h.y.push(lm.y);
-      h.z.push(lm.z);
-      if (h.x.length > this.windowSize) {
-        h.x.shift();
-        h.y.shift();
-        h.z.shift();
-      }
+      const f = this.filters.get(i)!;
       return {
-        x: h.x.reduce((a, b) => a + b, 0) / h.x.length,
-        y: h.y.reduce((a, b) => a + b, 0) / h.y.length,
-        z: h.z.reduce((a, b) => a + b, 0) / h.z.length,
+        x: f.x.filter(lm.x, timestampMs),
+        y: f.y.filter(lm.y, timestampMs),
+        z: f.z.filter(lm.z, timestampMs),
         visibility: lm.visibility,
       };
     });
   }
 
-  setWindowSize(n: number): void {
-    this.windowSize = Math.min(n, this.maxWindow);
+  /** Extrapolate already-smoothed landmarks forward by `horizonSec` using each one's filtered velocity. */
+  predict(smoothed: PoseLandmark[], horizonSec: number): PoseLandmark[] {
+    return smoothed.map((lm, i) => {
+      const f = this.filters.get(i);
+      if (!f) return lm;
+      return { ...lm, x: lm.x + f.x.velocity * horizonSec, y: lm.y + f.y.velocity * horizonSec };
+    });
   }
 
   reset(): void {
-    this.history.clear();
+    this.filters.clear();
   }
 }

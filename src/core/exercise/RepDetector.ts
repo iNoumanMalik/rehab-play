@@ -21,6 +21,10 @@ export class RepDetector {
   private reps = 0;
   private attempts = 0;
   private def: ExerciseDefinition;
+  // A brief dip below releaseThreshold (sensor jitter, a momentary frame drop)
+  // shouldn't cancel an otherwise-good hold — only a *sustained* drop should.
+  private belowReleaseMs = 0;
+  private readonly releaseGraceMs = 180;
 
   constructor(def: ExerciseDefinition) {
     this.def = def;
@@ -59,6 +63,7 @@ export class RepDetector {
         if (activation >= repThreshold) {
           this.phase = 'hold';
           this.holdMs = 0;
+          this.belowReleaseMs = 0;
         } else if (activation < engageThreshold * 0.6) {
           this.phase = 'idle'; // abandoned before reaching the top
         }
@@ -68,7 +73,10 @@ export class RepDetector {
         trackRep();
         this.holdMs += dt * 1000;
         if (activation < releaseThreshold) {
-          return this.complete();
+          this.belowReleaseMs += dt * 1000;
+          if (this.belowReleaseMs > this.releaseGraceMs) return this.complete();
+        } else {
+          this.belowReleaseMs = 0;
         }
         break;
 
@@ -119,6 +127,7 @@ export class RepDetector {
     this.peak = 0;
     this.peakVelocity = 0;
     this.prevActivation = 0;
+    this.belowReleaseMs = 0;
     this.repComps.clear();
     this.reps = 0;
     this.attempts = 0;

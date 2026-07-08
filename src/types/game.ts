@@ -63,12 +63,16 @@ export interface SessionReport {
   feedback: string[];
 }
 
+export interface AchievementContext {
+  totalSessions: number;
+}
+
 export interface Achievement {
   id: string;
   title: string;
   description: string;
   icon: string;
-  condition: (stats: GameStats) => boolean;
+  condition: (stats: GameStats, ctx: AchievementContext) => boolean;
   unlocked: boolean;
   unlockedAt?: string;
 }

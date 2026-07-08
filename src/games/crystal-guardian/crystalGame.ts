@@ -8,7 +8,7 @@ import { audioManager } from '../../core/services/AudioManager';
 import { AmbientField } from '../../core/engine/AmbientField';
 import { assets, drawSprite } from '../../core/assets/AssetSystem';
 import { crystalSvg, enemySvg, bossSvg } from '../../core/assets/sprites';
-import { danger, safe, warn } from '../../core/engine/palette';
+import { safe, warn, danger } from '../../core/engine/palette';
 import { overheadElevation } from '../../core/exercise';
 import type { ExerciseDefinition, ExerciseFrame, GameRegistration } from '../../core/exercise';
 
@@ -18,19 +18,19 @@ export const crystalExercise: ExerciseDefinition = {
   rehabFocus: 'Bilateral overhead press & shoulder stability',
   mode: 'rep',
   effort: overheadElevation,
-  engageThreshold: 0.25,
-  repThreshold: 0.8,
-  releaseThreshold: 0.35,
-  minHoldMs: 300,
-  maxRepVelocity: 4.5,
+  engageThreshold: 0.22,
+  repThreshold: 0.72,
+  releaseThreshold: 0.3,
+  minHoldMs: 220,
+  maxRepVelocity: 6,
   checkTrunkLean: true,
   checkAsymmetry: true,
-  maxTrunkLeanDeg: 16,
-  maxAsymmetry: 0.38,
+  maxTrunkLeanDeg: 19,
+  maxAsymmetry: 0.45,
   coachRules: [
     { id: 'lean', severity: 'warn', test: (c) => (c.compensations.find(x => x.id === 'trunk-lean')?.label ?? null) },
     { id: 'asym', severity: 'warn', test: (c) => (c.compensations.find(x => x.id === 'asymmetry')?.label ?? null) },
-    { id: 'higher', severity: 'cue', test: (c) => (c.phase === 'ascending' && c.activation < 0.8 ? 'Reach higher — arms fully overhead' : null) },
+    { id: 'higher', severity: 'cue', test: (c) => (c.phase === 'ascending' && c.activation < 0.72 ? 'Reach higher — arms fully overhead' : null) },
     { id: 'start', severity: 'cue', test: (c) => (c.phase === 'idle' && c.activation < 0.2 ? 'Raise both arms overhead to charge the crystal' : null) },
   ],
   calibration: {
@@ -41,14 +41,30 @@ export const crystalExercise: ExerciseDefinition = {
 
 interface Enemy {
   x: number; y: number; angle: number; speed: number; size: number;
-  health: number; color: string; hitTime: number; active: boolean; isBoss: boolean;
+  health: number; maxHealth: number; color: string; hitTime: number; active: boolean; isBoss: boolean;
 }
+interface Shockwave { x: number; y: number; r: number; maxR: number; color: string; life: number; }
 
 const ENEMY_COLORS = ['#EF5350', '#AB47BC', '#EC407A', '#FF7043'];
 const KILLS_PER_LEVEL = 6;
+const VICTORY_SEQUENCE_SEC = 1.7;
 
+const OBJECTIVE_BY_PHASE: Record<string, string> = {
+  idle: 'Raise both arms overhead, evenly',
+  ascending: 'Keep reaching — higher, together',
+  hold: 'Hold... now lower to release the blast!',
+  descending: 'Great! Charge again',
+};
+
+/**
+ * Power: a charge-and-release boss battle (Ring Fit Adventure energy). Every
+ * clean, held overhead press is a dramatic release — screen shake, a
+ * shockwave ring, and (on the boss) a slow-motion victory beat instead of an
+ * instant cut — so effortful reps feel like they matter, not just count.
+ */
 export class CrystalScene extends Scene {
   private enemies: Enemy[] = [];
+  private shockwaves: Shockwave[] = [];
   private particles = new ParticleSystem();
   private combo = new ComboSystem();
   private levelMgr = new LevelManager();
@@ -57,21 +73,45 @@ export class CrystalScene extends Scene {
   private killsThisLevel = 0;
   private reps = 0;
   private activation = 0;
+  private phase: ExerciseFrame['phase'] = 'idle';
   private crystalHealth = 100;
   private elapsed = 0;
   private lastSpawn = 0;
   private bossActive = false;
+  private bossDefeated = false;
+  private victoryTimer = 0;
+  private shake = 0;
   private over = false;
   private won = false;
   private feedback: string[] = [];
+  private successPulse = false;
   private ambient = new AmbientField({ kind: 'mote', colors: ['#4FC3F7', '#B388FF', '#80DEEA'], count: 24, maxAlpha: 0.4 });
 
   update(dt: number, frame: ExerciseFrame, _pose: PoseData | null): void {
     void _pose;
     this.reps = frame.reps;
     this.activation = frame.activation;
+    this.phase = frame.phase;
     this.ambient.update(dt, this.width, this.height);
+    this.successPulse = false;
+    this.shake = Math.max(0, this.shake - dt * 3.5);
+    this.updateShockwaves(dt);
+
     if (this.over) { this.particles.update(dt); return; }
+
+    // Boss just fell: hold on a celebratory beat before the real "over" cut.
+    if (this.bossDefeated) {
+      this.victoryTimer += dt;
+      this.particles.update(dt);
+      if (Math.random() < dt * 3) {
+        this.particles.emitBurst(
+          Math.random() * this.width, Math.random() * this.height * 0.6,
+          { colors: ['#FFD740', '#FF6B6B', '#69F0AE', '#64B5F6'], count: 10, speed: 60, lifetime: 0.8 },
+        );
+      }
+      if (this.victoryTimer >= VICTORY_SEQUENCE_SEC) { this.over = true; this.won = true; }
+      return;
+    }
 
     this.elapsed += dt;
     this.combo.update(dt);
@@ -98,6 +138,7 @@ export class CrystalScene extends Scene {
       if (Math.hypot(e.x - cx, e.y - cy) < 42) {
         this.crystalHealth = Math.max(0, this.crystalHealth - (e.isBoss ? 40 : 14));
         this.particles.emitBurst(cx, cy, { color: '#EF5350', count: 14, speed: 90 });
+        this.shake = Math.min(1, this.shake + 0.5);
         audioManager.playHit();
         this.combo.registerMiss();
         e.active = false;
@@ -107,6 +148,15 @@ export class CrystalScene extends Scene {
     this.particles.update(dt);
   }
 
+  private updateShockwaves(dt: number): void {
+    for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+      const s = this.shockwaves[i];
+      s.r += dt * 340;
+      s.life -= dt * 1.6;
+      if (s.life <= 0 || s.r > s.maxR) this.shockwaves.splice(i, 1);
+    }
+  }
+
   private spawnWave(): void {
     const count = 1 + Math.floor(Math.random() * 2);
     const speedMul = this.levelMgr.getSpeedMultiplier();
@@ -114,8 +164,8 @@ export class CrystalScene extends Scene {
   }
 
   private spawnBoss(): void {
-    const boss = this.makeEnemy(0.8, true);
-    boss.size = 58; boss.health = 5; boss.color = '#E53935';
+    const boss = this.makeEnemy(0.75, true);
+    boss.size = 58; boss.health = 6; boss.maxHealth = 6; boss.color = '#E53935';
     this.enemies.push(boss);
   }
 
@@ -128,7 +178,7 @@ export class CrystalScene extends Scene {
       x, y, angle: Math.atan2(cy - y, cx - x),
       speed: (28 + Math.random() * 34) * speedMul,
       size: isBoss ? 58 : 24 + Math.random() * 14,
-      health: isBoss ? 5 : 1,
+      health: isBoss ? 6 : 1, maxHealth: isBoss ? 6 : 1,
       color: ENEMY_COLORS[Math.floor(Math.random() * ENEMY_COLORS.length)],
       hitTime: 0, active: true, isBoss,
     };
@@ -137,6 +187,9 @@ export class CrystalScene extends Scene {
   private blast(cx: number, cy: number): void {
     const radius = Math.min(this.width, this.height) * 0.48;
     this.particles.emitBurst(cx, cy, { color: '#FFD740', count: 26, speed: 170, lifetime: 0.6 });
+    this.shockwaves.push({ x: cx, y: cy, r: 20, maxR: radius * 1.3, color: '#FFD740', life: 1 });
+    this.shake = Math.min(1, this.shake + 0.35);
+    this.successPulse = true;
     audioManager.playSuccess();
     let hitAny = false;
 
@@ -146,7 +199,7 @@ export class CrystalScene extends Scene {
       e.health--;
       e.hitTime = this.elapsed;
       hitAny = true;
-      this.particles.emitBurst(e.x, e.y, { color: e.color, count: 10, speed: 90 });
+      this.particles.emitBurst(e.x, e.y, { color: e.color, count: e.isBoss ? 20 : 10, speed: 90 });
       if (e.health <= 0) {
         e.active = false;
         const mult = this.combo.registerHit();
@@ -154,7 +207,12 @@ export class CrystalScene extends Scene {
         this.kills++;
         this.killsThisLevel++;
         if (mult > 1) audioManager.playCombo();
-        if (e.isBoss) { this.won = true; this.over = true; audioManager.playVictory(); }
+        if (e.isBoss) {
+          this.bossDefeated = true;
+          this.shake = 1;
+          this.shockwaves.push({ x: e.x, y: e.y, r: 10, maxR: Math.max(this.width, this.height), color: '#FFD740', life: 1.2 });
+          audioManager.playVictory();
+        }
       }
     }
     if (hitAny && this.killsThisLevel >= KILLS_PER_LEVEL && this.levelMgr.currentLevel < this.levelMgr.maxLevel) {
@@ -164,16 +222,22 @@ export class CrystalScene extends Scene {
   }
 
   private drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy): void {
+    // Boss escalates visually as it takes damage — a visible "phase" change, not just a health number.
+    const dmgFrac = e.isBoss ? 1 - e.health / e.maxHealth : 0;
+    const tint = dmgFrac > 0.6 ? danger() : e.color;
     const img = e.isBoss
-      ? assets.getOrCreate(`boss:${e.color}`, () => bossSvg(e.color))
+      ? assets.getOrCreate(`boss:${tint}`, () => bossSvg(tint))
       : assets.getOrCreate(`enemy:${e.color}`, () => enemySvg(e.color));
-    const bob = Math.sin(this.elapsed * 4 + e.x) * 2;
+    const angerShake = e.isBoss ? dmgFrac * 3 : 0;
+    const bob = Math.sin(this.elapsed * 4 + e.x) * 2 + (Math.random() - 0.5) * angerShake;
+    const size = e.size * 2.1 * (e.isBoss ? 1 + dmgFrac * 0.15 : 1);
+
     if (img) {
-      drawSprite(ctx, img, e.x, e.y + bob, e.size * 2.1);
+      drawSprite(ctx, img, e.x + (Math.random() - 0.5) * angerShake, e.y + bob, size);
     } else {
       ctx.save();
       ctx.translate(e.x, e.y);
-      ctx.fillStyle = e.color;
+      ctx.fillStyle = tint;
       ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
@@ -183,15 +247,22 @@ export class CrystalScene extends Scene {
       ctx.beginPath(); ctx.arc(e.x, e.y + bob, e.size, 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1;
     }
+    if (e.isBoss) {
+      Renderer.drawProgressBar(ctx, e.x - 40, e.y - e.size - 18, 80, 6, e.health / e.maxHealth, dmgFrac > 0.6 ? danger() : warn());
+    }
   }
 
   render(ctx: CanvasRenderingContext2D): void {
+    ctx.save();
+    if (this.shake > 0.01) {
+      ctx.translate((Math.random() - 0.5) * this.shake * 14, (Math.random() - 0.5) * this.shake * 14);
+    }
+
     Renderer.clear(ctx, this.width, this.height);
     Renderer.drawVignette(ctx, this.width, this.height, '#081826', 0.5);
     this.ambient.render(ctx);
     const cx = this.width / 2, cy = this.height / 2;
 
-    // Crystal, charged by live activation
     const chargePct = Math.min(1, this.activation);
     const crystalColor = chargePct >= 0.95 ? safe() : chargePct > 0.5 ? warn() : '#64B5F6';
     const pulse = Math.sin(this.elapsed * 4) * 0.05 + 1;
@@ -199,26 +270,38 @@ export class CrystalScene extends Scene {
     const crystalImg = assets.getOrCreate(`crystal:${crystalColor}`, () => crystalSvg(crystalColor));
     if (crystalImg) drawSprite(ctx, crystalImg, cx, cy, 74 * pulse);
     else Renderer.drawCircle(ctx, cx, cy, 26 * pulse, crystalColor);
-    Renderer.drawProgressBar(ctx, cx - 55, cy + 52, 110, 9, chargePct, crystalColor);
+    if (!this.bossDefeated) Renderer.drawProgressBar(ctx, cx - 55, cy + 52, 110, 9, chargePct, crystalColor);
 
     for (const e of this.enemies) this.drawEnemy(ctx, e);
+
+    for (const s of this.shockwaves) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, s.life);
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     this.particles.render(ctx);
 
-    // HUD
-    Renderer.drawText(ctx, `Score: ${this.score}`, 16, 14, { size: 20, align: 'left' });
-    Renderer.drawText(ctx, `Reps: ${this.reps}  ·  Wave ${this.levelMgr.currentLevel}`, 16, 42, { size: 13, color: '#aaa', align: 'left' });
-    Renderer.drawProgressBar(ctx, this.width - 130, 18, 110, 10, this.crystalHealth / 100, this.crystalHealth > 40 ? safe() : danger());
-    Renderer.drawText(ctx, '🛡 Crystal', this.width - 130, 32, { size: 11, color: '#ccc', align: 'left' });
-    if (this.combo.combo >= 3) {
-      Renderer.drawText(ctx, `🔥 ${this.combo.combo}x`, cx, 14, { size: 18, align: 'center', color: '#FF6B6B' });
+    if (this.bossDefeated) {
+      const t = Math.min(1, this.victoryTimer / VICTORY_SEQUENCE_SEC);
+      ctx.globalAlpha = Math.min(1, t * 2);
+      Renderer.drawText(ctx, '⚔️ TEMPLE DEFENDED', cx, cy - 90, { size: 30, align: 'center', baseline: 'middle', color: '#FFD740' });
+      ctx.globalAlpha = 1;
+    } else {
+      Renderer.drawText(ctx, `Score: ${this.score}`, 16, 14, { size: 20, align: 'left' });
+      Renderer.drawText(ctx, `Reps: ${this.reps}  ·  Wave ${this.levelMgr.currentLevel}`, 16, 42, { size: 13, color: '#aaa', align: 'left' });
+      if (this.combo.combo >= 3) {
+        Renderer.drawText(ctx, `🔥 ${this.combo.combo}x`, cx, 14, { size: 18, align: 'center', color: '#FF6B6B' });
+      }
     }
-
-    if (this.over) {
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(0, 0, this.width, this.height);
-      Renderer.drawText(ctx, this.won ? '⚔️ Temple Defended!' : '💥 Crystal Shattered', cx, cy - 30, { size: 30, align: 'center', baseline: 'middle', color: this.won ? '#FFD740' : '#EF5350' });
-      Renderer.drawText(ctx, `Score ${this.score} · ${this.reps} clean reps · ${this.kills} kills`, cx, cy + 14, { size: 16, align: 'center', baseline: 'middle', color: '#ccc' });
-    }
+    ctx.restore();
   }
 
   getState(): SceneState {
@@ -227,6 +310,10 @@ export class CrystalScene extends Scene {
       combo: this.combo.combo, multiplier: this.combo.getMultiplier(), maxCombo: this.combo.maxCombo,
       level: this.levelMgr.currentLevel, accuracy: 100,
       feedback: this.feedback, over: this.over, won: this.won,
+      health: { current: this.crystalHealth, max: 100 },
+      objective: this.bossDefeated ? 'Victory!' : OBJECTIVE_BY_PHASE[this.phase],
+      guidance: null,
+      successPulse: this.successPulse,
     };
   }
 }

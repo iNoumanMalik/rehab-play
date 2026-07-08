@@ -10,6 +10,12 @@ import type { CompensationFlag, ExerciseDefinition, ExerciseFrame } from './type
  * ExerciseFrame (activation, phase, reps, compensations, coaching). Games read
  * this instead of raw wrist coordinates, so only correct movements count.
  */
+// A momentary tracking dip (one bad frame, brief occlusion) shouldn't cancel an
+// in-progress rep or flash "step back" at the player — only a sustained loss
+// of tracking should. During the grace window we keep serving the last known
+// good frame (minus the rep-completion event, which only fires on live data).
+const TRACKING_GRACE_MS = 400;
+
 export class ExerciseEngine {
   private def: ExerciseDefinition;
   private calibration: Calibration;
@@ -17,6 +23,8 @@ export class ExerciseEngine {
   private coach: CoachEngine;
   private romMax = 0;
   private quality = 1;
+  private untrackedMs = 0;
+  private lastGoodFrame: ExerciseFrame | null = null;
 
   constructor(def: ExerciseDefinition, calibration: Calibration) {
     this.def = def;
@@ -30,6 +38,10 @@ export class ExerciseEngine {
     const tracked = pose != null && upperBodyTracked(lm);
 
     if (!tracked) {
+      this.untrackedMs += dt * 1000;
+      if (this.lastGoodFrame && this.untrackedMs < TRACKING_GRACE_MS) {
+        return { ...this.lastGoodFrame, rep: null };
+      }
       return {
         tracked: false, activation: 0, effort: 0, phase: this.reps.currentPhase,
         reps: this.reps.validReps, attempts: this.reps.totalAttempts, rep: null,
@@ -37,6 +49,7 @@ export class ExerciseEngine {
         quality: this.quality, romMax: this.romMax,
       };
     }
+    this.untrackedMs = 0;
 
     const effort = this.def.effort(lm);
     const activation = this.calibration.activation(effort);
@@ -53,7 +66,7 @@ export class ExerciseEngine {
       dt,
     );
 
-    return {
+    const frame: ExerciseFrame = {
       tracked: true,
       activation,
       effort,
@@ -66,6 +79,8 @@ export class ExerciseEngine {
       quality: this.quality,
       romMax: this.romMax,
     };
+    this.lastGoodFrame = frame;
+    return frame;
   }
 
   private detectCompensations(lm: import('../../types').PoseLandmark[], activation: number): CompensationFlag[] {
@@ -87,5 +102,7 @@ export class ExerciseEngine {
     this.coach.reset();
     this.romMax = 0;
     this.quality = 1;
+    this.untrackedMs = 0;
+    this.lastGoodFrame = null;
   }
 }
