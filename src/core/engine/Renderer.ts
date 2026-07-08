@@ -63,6 +63,15 @@ export class Renderer {
     ctx.fill();
   }
 
+  /** Soft themed vignette to frame the scene without hiding the camera. */
+  static drawVignette(ctx: CanvasRenderingContext2D, w: number, h: number, color: string, strength = 0.5): void {
+    const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.75);
+    grad.addColorStop(0, color + '00');
+    grad.addColorStop(1, color + Math.round(strength * 255).toString(16).padStart(2, '0'));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }
+
   static drawHandCursor(ctx: CanvasRenderingContext2D, x: number, y: number, r = 35): void {
     Renderer.drawGlow(ctx, x, y, r * 1.5, '#ffffff');
     ctx.beginPath();

@@ -10,6 +10,9 @@ import { GameSession } from './pages/GameSession';
 import { GameRunner } from './components/game/GameRunner';
 import { getAllGameMeta } from './games/gameRegistry';
 import { audioManager } from './core/services/AudioManager';
+import { assets } from './core/assets/AssetSystem';
+import { spriteManifest } from './core/assets/sprites';
+import { useSettings } from './hooks/useSettings';
 import type { GameId } from './types';
 
 function App() {
@@ -19,10 +22,24 @@ function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { poseDataRef, isReady, error } = usePoseEngine(videoRef);
   const session = useGameSession(currentGame as GameId | null, poseDataRef);
+  const [settings] = useSettings();
 
   useEffect(() => {
     audioManager.init();
+    assets.preload(spriteManifest());
   }, []);
+
+  // Apply audio settings.
+  useEffect(() => {
+    audioManager.setSfxEnabled(settings.sfxOn);
+    audioManager.setMasterVolume(settings.volume);
+  }, [settings.sfxOn, settings.volume]);
+
+  // Ambient music plays only during a game and only when enabled.
+  useEffect(() => {
+    if (currentGame && settings.musicOn) audioManager.startMusic();
+    else audioManager.stopMusic();
+  }, [currentGame, settings.musicOn]);
 
   const handleVideoReady = useCallback((video: HTMLVideoElement) => {
     videoRef.current = video;
@@ -54,8 +71,8 @@ function App() {
     <div className="relative min-h-screen bg-[#070B1A] text-white overflow-x-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-violet-600/15 via-transparent to-cyan-600/15 rounded-full blur-[140px] animate-[pulse_10s_ease-in-out_infinite]" />
-        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-pink-600/15 via-transparent to-amber-600/15 rounded-full blur-[140px] animate-[pulse_12s_ease-in-out_infinite_2s]" />
+        <div className={`absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-violet-600/15 via-transparent to-cyan-600/15 rounded-full blur-[140px] ${settings.reducedMotion ? '' : 'animate-[pulse_10s_ease-in-out_infinite]'}`} />
+        <div className={`absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-pink-600/15 via-transparent to-amber-600/15 rounded-full blur-[140px] ${settings.reducedMotion ? '' : 'animate-[pulse_12s_ease-in-out_infinite_2s]'}`} />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
       </div>
 

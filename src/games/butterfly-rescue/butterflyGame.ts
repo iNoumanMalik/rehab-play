@@ -5,6 +5,10 @@ import { ComboSystem } from '../../core/engine/ComboSystem';
 import { LevelManager } from '../../core/engine/LevelManager';
 import { Renderer } from '../../core/engine/Renderer';
 import { audioManager } from '../../core/services/AudioManager';
+import { AmbientField } from '../../core/engine/AmbientField';
+import { assets, drawSprite } from '../../core/assets/AssetSystem';
+import { butterflySvg, mothSvg } from '../../core/assets/sprites';
+import { danger, safe } from '../../core/engine/palette';
 import { reachExtension, wristToScreen, upperBodyTracked } from '../../core/exercise';
 import type { ExerciseDefinition, ExerciseFrame, GameRegistration } from '../../core/exercise';
 
@@ -53,10 +57,12 @@ export class ButterflyScene extends Scene {
   private over = false;
   private won = false;
   private feedback: string[] = [];
+  private ambient = new AmbientField({ kind: 'petal', colors: ['#8BC34A', '#C5E1A5', '#F48FB1', '#CE93D8'], count: 20 });
 
   update(dt: number, frame: ExerciseFrame, pose: PoseData | null): void {
-    if (this.over) { this.particles.update(dt); return; }
     this.elapsed += dt;
+    this.ambient.update(dt, this.width, this.height);
+    if (this.over) { this.particles.update(dt); return; }
     this.combo.update(dt);
     this.feedback = [];
 
@@ -130,37 +136,44 @@ export class ButterflyScene extends Scene {
     }
   }
 
+  private drawBug(ctx: CanvasRenderingContext2D, b: Butterfly): void {
+    const alpha = b.caught ? Math.max(0, 1 - (this.elapsed - b.caughtAt) / 0.5) : 1;
+    const rot = Math.sin(this.elapsed * 3 + b.wing) * 0.15;
+    const img = b.isMoth
+      ? assets.getOrCreate('moth', mothSvg)
+      : assets.getOrCreate(`butterfly:${b.color}`, () => butterflySvg(b.color));
+    if (img) { drawSprite(ctx, img, b.x, b.y, b.size * 1.9, rot, alpha); return; }
+
+    // Procedural fallback until the sprite decodes.
+    const flap = Math.sin(this.elapsed * 9 + b.wing) * 0.25;
+    const s = b.size;
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.globalAlpha = alpha;
+    if (b.isMoth) {
+      ctx.fillStyle = '#5D4037';
+      ctx.beginPath(); ctx.ellipse(0, 0, s / 2.5, s / 3, 0, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.fillStyle = b.color;
+      ctx.beginPath(); ctx.ellipse(-s / 4, 0, s / 3, s / 2.5 + Math.abs(flap) * s / 4, flap, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s / 4, 0, s / 3, s / 2.5 + Math.abs(flap) * s / 4, -flap, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
   render(ctx: CanvasRenderingContext2D): void {
     Renderer.clear(ctx, this.width, this.height);
+    Renderer.drawVignette(ctx, this.width, this.height, '#12240f', 0.4);
+    this.ambient.render(ctx);
 
-    for (const b of this.bugs) {
-      const flap = Math.sin(this.elapsed * 9 + b.wing) * 0.25;
-      const s = b.size;
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      ctx.globalAlpha = b.caught ? Math.max(0, 1 - (this.elapsed - b.caughtAt) / 0.5) : 1;
-      if (b.isMoth) {
-        ctx.fillStyle = '#5D4037';
-        ctx.beginPath(); ctx.ellipse(0, 0, s / 2.5, s / 3, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#8D6E63';
-        ctx.beginPath(); ctx.ellipse(-s / 5, -s / 6, s / 5, s / 4, 0.2, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(s / 5, -s / 6, s / 5, s / 4, -0.2, 0, Math.PI * 2); ctx.fill();
-      } else {
-        ctx.shadowColor = b.color; ctx.shadowBlur = 10; ctx.fillStyle = b.color;
-        ctx.beginPath(); ctx.ellipse(-s / 4, 0, s / 3, s / 2.5 + Math.abs(flap) * s / 4, flap, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(s / 4, 0, s / 3, s / 2.5 + Math.abs(flap) * s / 4, -flap, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-      ctx.fillStyle = '#2c2c2c';
-      ctx.beginPath(); ctx.ellipse(0, 0, s / 10, s / 4.5, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
+    for (const b of this.bugs) this.drawBug(ctx, b);
     ctx.globalAlpha = 1;
     this.particles.render(ctx);
 
     Renderer.drawText(ctx, `Score: ${this.score}`, 16, 12, { size: 18, align: 'left' });
     Renderer.drawText(ctx, `Level ${this.levelMgr.currentLevel}`, 16, this.height - 26, { size: 13, color: '#88ccff', align: 'left' });
-    Renderer.drawProgressBar(ctx, this.width - 130, 16, 110, 10, this.health / 100, this.health > 40 ? '#69F0AE' : '#EF5350');
+    Renderer.drawProgressBar(ctx, this.width - 130, 16, 110, 10, this.health / 100, this.health > 40 ? safe() : danger());
     Renderer.drawText(ctx, '❤️ Health', this.width - 130, 30, { size: 11, color: '#ccc', align: 'left' });
     if (this.combo.combo >= 3) {
       Renderer.drawText(ctx, `🔥 ${this.combo.combo}x`, this.width / 2, 12, { size: 17, align: 'center', color: '#FF6B6B' });

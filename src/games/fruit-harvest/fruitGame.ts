@@ -5,6 +5,10 @@ import { ComboSystem } from '../../core/engine/ComboSystem';
 import { LevelManager } from '../../core/engine/LevelManager';
 import { Renderer } from '../../core/engine/Renderer';
 import { audioManager } from '../../core/services/AudioManager';
+import { AmbientField } from '../../core/engine/AmbientField';
+import { assets, drawSprite } from '../../core/assets/AssetSystem';
+import { fruitSvg } from '../../core/assets/sprites';
+import { danger } from '../../core/engine/palette';
 import { shoulderElevation, wristToScreen, upperBodyTracked } from '../../core/exercise';
 import type { ExerciseDefinition, ExerciseFrame, GameRegistration } from '../../core/exercise';
 
@@ -72,12 +76,14 @@ export class FruitScene extends Scene {
   private over = false;
   private won = false;
   private feedback: string[] = [];
+  private ambient = new AmbientField({ kind: 'ember', colors: ['#FFB74D', '#FF8A65', '#FFD54F'], count: 16, maxAlpha: 0.4 });
 
   private recipe() { return RECIPES[Math.min(this.recipeIdx, RECIPES.length - 1)]; }
 
   update(dt: number, frame: ExerciseFrame, pose: PoseData | null): void {
-    if (this.over) { this.particles.update(dt); return; }
     this.elapsed += dt;
+    this.ambient.update(dt, this.width, this.height);
+    if (this.over) { this.particles.update(dt); return; }
     this.combo.update(dt);
     this.feedback = [];
 
@@ -165,6 +171,8 @@ export class FruitScene extends Scene {
 
   render(ctx: CanvasRenderingContext2D): void {
     Renderer.clear(ctx, this.width, this.height);
+    Renderer.drawVignette(ctx, this.width, this.height, '#2a1607', 0.42);
+    this.ambient.render(ctx);
     const recipe = this.recipe();
 
     // zone guides
@@ -177,17 +185,27 @@ export class FruitScene extends Scene {
     }
 
     for (const f of this.fruits) {
-      ctx.globalAlpha = f.collected ? Math.max(0, 1 - (this.elapsed - f.collectedAt) / 0.5) : 1;
+      const alpha = f.collected ? Math.max(0, 1 - (this.elapsed - f.collectedAt) / 0.5) : 1;
       const wobble = Math.sin(this.elapsed * 3 + f.id) * 3;
-      Renderer.drawGlow(ctx, f.x, f.y + wobble, 38, FRUIT_COLORS[f.type]);
-      Renderer.drawCircle(ctx, f.x, f.y + wobble, 26, FRUIT_COLORS[f.type]);
-      if (f.wrong) {
-        ctx.strokeStyle = 'rgba(255,60,60,0.7)'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(f.x, f.y + wobble, 30, 0, Math.PI * 2); ctx.stroke();
+      const img = assets.getOrCreate(`fruit:${f.type}`, () => fruitSvg(f.type));
+      if (img) {
+        drawSprite(ctx, img, f.x, f.y + wobble, 58, 0, alpha);
+      } else {
+        ctx.globalAlpha = alpha;
+        Renderer.drawGlow(ctx, f.x, f.y + wobble, 38, FRUIT_COLORS[f.type]);
+        Renderer.drawCircle(ctx, f.x, f.y + wobble, 26, FRUIT_COLORS[f.type]);
+        ctx.font = '22px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(FRUIT_EMOJI[f.type], f.x, f.y + wobble + 1);
+        ctx.globalAlpha = 1;
       }
-      ctx.font = '22px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(FRUIT_EMOJI[f.type], f.x, f.y + wobble + 1);
-      ctx.globalAlpha = 1;
+      if (f.wrong) {
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = danger(); ctx.lineWidth = 3.5;
+        ctx.beginPath(); ctx.arc(f.x, f.y + wobble, 32, 0, Math.PI * 2); ctx.stroke();
+        // non-colour cue: a "no" slash
+        ctx.beginPath(); ctx.moveTo(f.x - 22, f.y + wobble - 22); ctx.lineTo(f.x + 22, f.y + wobble + 22); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
     }
     this.particles.render(ctx);
 

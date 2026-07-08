@@ -1,3 +1,5 @@
+import { useSettings } from '../../hooks/useSettings';
+
 interface CalibrationOverlayProps {
   prompt: string;
   stepProgress: number; // 0..1
@@ -10,6 +12,7 @@ const C = 2 * Math.PI * R;
 
 /** Full-surface overlay guiding the user through ROM calibration before a game. */
 export function CalibrationOverlay({ prompt, stepProgress, capturing, tracked }: CalibrationOverlayProps) {
+  const [{ reducedMotion }] = useSettings();
   return (
     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/55 backdrop-blur-sm text-center px-6"
       role="status" aria-live="polite">
@@ -22,7 +25,7 @@ export function CalibrationOverlay({ prompt, stepProgress, capturing, tracked }:
             strokeWidth="8" strokeLinecap="round"
             strokeDasharray={C}
             strokeDashoffset={C * (1 - stepProgress)}
-            style={{ transition: 'stroke-dashoffset 0.1s linear' }}
+            style={{ transition: reducedMotion ? 'none' : 'stroke-dashoffset 0.1s linear' }}
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center text-3xl">

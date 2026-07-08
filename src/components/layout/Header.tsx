@@ -1,3 +1,6 @@
+import { SettingsMenu } from '../ui/SettingsMenu';
+import { useSettings } from '../../hooks/useSettings';
+
 interface HeaderProps {
   isCameraOn: boolean;
   videoReady: boolean;
@@ -6,13 +9,14 @@ interface HeaderProps {
 }
 
 export function Header({ isCameraOn, videoReady, isReady, onToggleCamera }: HeaderProps) {
+  const [{ reducedMotion }] = useSettings();
   return (
     <header className="relative z-20 bg-[#070B1A]/80 backdrop-blur-xl border-b border-white/[0.08] sticky top-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
             <div className="relative w-11 h-11 sm:w-12 sm:h-12 flex-shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 rounded-xl sm:rounded-2xl animate-pulse opacity-60 blur-md" />
+              <div className={`absolute inset-0 bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 rounded-xl sm:rounded-2xl opacity-60 blur-md ${reducedMotion ? '' : 'animate-pulse'}`} />
               <div className="relative w-full h-full bg-gradient-to-br from-violet-500 via-purple-500 to-pink-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl border border-white/20">
                 <span className="text-xl sm:text-2xl">⚡</span>
               </div>
@@ -55,6 +59,7 @@ export function Header({ isCameraOn, videoReady, isReady, onToggleCamera }: Head
                 Loading Pose
               </span>
             )}
+            <SettingsMenu />
           </div>
         </div>
       </div>

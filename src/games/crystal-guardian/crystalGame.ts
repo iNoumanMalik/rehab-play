@@ -5,6 +5,10 @@ import { ComboSystem } from '../../core/engine/ComboSystem';
 import { LevelManager } from '../../core/engine/LevelManager';
 import { Renderer } from '../../core/engine/Renderer';
 import { audioManager } from '../../core/services/AudioManager';
+import { AmbientField } from '../../core/engine/AmbientField';
+import { assets, drawSprite } from '../../core/assets/AssetSystem';
+import { crystalSvg, enemySvg, bossSvg } from '../../core/assets/sprites';
+import { danger, safe, warn } from '../../core/engine/palette';
 import { overheadElevation } from '../../core/exercise';
 import type { ExerciseDefinition, ExerciseFrame, GameRegistration } from '../../core/exercise';
 
@@ -60,11 +64,13 @@ export class CrystalScene extends Scene {
   private over = false;
   private won = false;
   private feedback: string[] = [];
+  private ambient = new AmbientField({ kind: 'mote', colors: ['#4FC3F7', '#B388FF', '#80DEEA'], count: 24, maxAlpha: 0.4 });
 
   update(dt: number, frame: ExerciseFrame, _pose: PoseData | null): void {
     void _pose;
     this.reps = frame.reps;
     this.activation = frame.activation;
+    this.ambient.update(dt, this.width, this.height);
     if (this.over) { this.particles.update(dt); return; }
 
     this.elapsed += dt;
@@ -157,41 +163,51 @@ export class CrystalScene extends Scene {
     }
   }
 
+  private drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy): void {
+    const img = e.isBoss
+      ? assets.getOrCreate(`boss:${e.color}`, () => bossSvg(e.color))
+      : assets.getOrCreate(`enemy:${e.color}`, () => enemySvg(e.color));
+    const bob = Math.sin(this.elapsed * 4 + e.x) * 2;
+    if (img) {
+      drawSprite(ctx, img, e.x, e.y + bob, e.size * 2.1);
+    } else {
+      ctx.save();
+      ctx.translate(e.x, e.y);
+      ctx.fillStyle = e.color;
+      ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    if (this.elapsed - e.hitTime < 0.12) {
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(e.x, e.y + bob, e.size, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
   render(ctx: CanvasRenderingContext2D): void {
     Renderer.clear(ctx, this.width, this.height);
+    Renderer.drawVignette(ctx, this.width, this.height, '#081826', 0.5);
+    this.ambient.render(ctx);
     const cx = this.width / 2, cy = this.height / 2;
 
     // Crystal, charged by live activation
     const chargePct = Math.min(1, this.activation);
-    const crystalColor = chargePct >= 0.95 ? '#00E676' : chargePct > 0.5 ? '#FFD740' : '#64B5F6';
+    const crystalColor = chargePct >= 0.95 ? safe() : chargePct > 0.5 ? warn() : '#64B5F6';
     const pulse = Math.sin(this.elapsed * 4) * 0.05 + 1;
-    Renderer.drawGlow(ctx, cx, cy, 70 * pulse * (0.7 + chargePct * 0.6), crystalColor);
-    Renderer.drawCircle(ctx, cx, cy, 26 * pulse, crystalColor);
-    Renderer.drawProgressBar(ctx, cx - 55, cy + 44, 110, 9, chargePct, crystalColor);
+    Renderer.drawGlow(ctx, cx, cy, 74 * pulse * (0.7 + chargePct * 0.6), crystalColor);
+    const crystalImg = assets.getOrCreate(`crystal:${crystalColor}`, () => crystalSvg(crystalColor));
+    if (crystalImg) drawSprite(ctx, crystalImg, cx, cy, 74 * pulse);
+    else Renderer.drawCircle(ctx, cx, cy, 26 * pulse, crystalColor);
+    Renderer.drawProgressBar(ctx, cx - 55, cy + 52, 110, 9, chargePct, crystalColor);
 
-    for (const e of this.enemies) {
-      const flash = this.elapsed - e.hitTime < 0.12;
-      ctx.save();
-      ctx.translate(e.x, e.y);
-      ctx.rotate(Math.atan2(cy - e.y, cx - e.x));
-      ctx.fillStyle = flash ? '#fff' : e.color;
-      ctx.shadowColor = e.color;
-      ctx.shadowBlur = e.isBoss ? 18 : 8;
-      ctx.beginPath();
-      ctx.moveTo(e.size, 0);
-      ctx.lineTo(-e.size / 2, -e.size / 2);
-      ctx.lineTo(-e.size / 2, e.size / 2);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
-    ctx.shadowBlur = 0;
+    for (const e of this.enemies) this.drawEnemy(ctx, e);
     this.particles.render(ctx);
 
     // HUD
     Renderer.drawText(ctx, `Score: ${this.score}`, 16, 14, { size: 20, align: 'left' });
     Renderer.drawText(ctx, `Reps: ${this.reps}  ·  Wave ${this.levelMgr.currentLevel}`, 16, 42, { size: 13, color: '#aaa', align: 'left' });
-    Renderer.drawProgressBar(ctx, this.width - 130, 18, 110, 10, this.crystalHealth / 100, this.crystalHealth > 40 ? '#69F0AE' : '#EF5350');
+    Renderer.drawProgressBar(ctx, this.width - 130, 18, 110, 10, this.crystalHealth / 100, this.crystalHealth > 40 ? safe() : danger());
     Renderer.drawText(ctx, '🛡 Crystal', this.width - 130, 32, { size: 11, color: '#ccc', align: 'left' });
     if (this.combo.combo >= 3) {
       Renderer.drawText(ctx, `🔥 ${this.combo.combo}x`, cx, 14, { size: 18, align: 'center', color: '#FF6B6B' });

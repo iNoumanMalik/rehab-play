@@ -14,7 +14,12 @@ export function FeedbackOverlay({ messages, visible }: FeedbackOverlayProps) {
   };
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 pointer-events-none">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 pointer-events-none"
+    >
       {messages.map((msg, i) => (
         <div
           key={i}
