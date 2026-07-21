@@ -56,4 +56,42 @@ This document cross-references RehabPlay's implemented features to the specific 
 | "Reset My Progress" — the app's first real destructive action, gated behind a custom accessible confirmation dialog (not `window.confirm`) that explains exactly what is and isn't cleared | `src/core/services/StorageService.ts` (`resetProgress`), `src/components/ui/SettingsMenu.tsx` (`ResetProgressConfirm`) | Nielsen #5 Error prevention; Nielsen #3 User control & freedom; Shneiderman #5 Simple error handling, #6 Easy reversal (of the *decision*, via Cancel) | Explicitly scoped to progress/achievements/calibration only — accessibility and audio preferences are untouched, because "reset my progress" and "reset my preferences" are different user intents that shouldn't be conflated. |
 | Settings & Accessibility panel restructured into a labelled, sectioned dialog (Display / Audio / Gameplay / Language / Data) with `role="dialog"`, `aria-modal`, Escape-to-close, and focus moved to the panel on open | `src/components/ui/SettingsMenu.tsx` | WCAG 2.4.3 (Focus Order), 4.1.2 (Name, Role, Value); Nielsen #4 Consistency, #6 Recognition rather than recall; Shneiderman #1 Consistency | All settings are reachable from one predictable place, at any time, from any screen (Header is always mounted) — not buried per-screen. |
 
-**Known scope boundary (by design, not oversight):** the new tokens above are applied to the app shell and the Settings panel itself in Phase A; the remaining ~20 screens are refactored onto the same tokens in Phase B. Until then, most of the app still renders in its original dark palette regardless of the Theme toggle — this is the planned incremental rollout, not a bug.
+**Known scope boundary (by design, not oversight):** the new tokens above are applied to the app shell and the Settings panel itself in Phase A; the remaining ~20 screens are refactored onto the same tokens in Phase B.
+
+## Phase B — Full Light/Dark Theming Pass
+
+| Feature | Implemented in | Principle(s) satisfied | Notes |
+|---|---|---|---|
+| Every screen (Header, Dashboard, GameCard, StatCard, GameSession, VictoryScreen, HUD, ObjectiveBanner, FeedbackOverlay, CalibrationOverlay, ToastStack) now consumes the semantic tokens from Phase A instead of hardcoded dark-only colors | all files above | WCAG 1.4.3 (Contrast Minimum); Nielsen #7 Flexibility | Dark defaults are byte-identical to the pre-Phase-A colors, so this is additive, not a redesign. |
+| Brand-colored badges (score/streak/achievement/tag chips) get a real light-mode-safe counterpart via a custom `dark:` variant tied to `data-theme`, not just the browser's `prefers-color-scheme` | `src/index.css` (`@custom-variant dark`), `Header.tsx`, `Dashboard.tsx`, `VictoryScreen.tsx`, `GameSession.tsx`, `gameRegistry.ts` | WCAG 1.4.3 (Contrast Minimum) | Caught and fixed during verification: light-tinted text (`text-violet-200`) on a translucent chip was only legible against a dark page — a real regression light mode would otherwise have shipped with. |
+| Camera-stage overlays (calibration/pause/loading veils) deliberately keep fixed light text on a fixed black scrim regardless of app theme | `src/components/layout/Stage.tsx` | Nielsen #2 Match with the real world | These sit on top of live, unpredictable camera video — not app chrome — so they intentionally don't follow the Theme setting. Documented exception, not an oversight. |
+
+## Phase C — System Status & Error Prevention/Recovery
+
+| Feature | Implemented in | Principle(s) satisfied | Notes |
+|---|---|---|---|
+| Distance heuristic (too close / too far from camera) via calibrated torso size, polled ~1×/sec (not per-frame) | `src/hooks/useTrackingHealth.ts` | Nielsen #5 Error prevention; WCAG 3.3.1-style proactive guidance | Reuses the existing `torsoLength` metric rather than a new pose analysis path. |
+| Low-light heuristic via a downsampled (16×16) video-frame luminance sample | `src/hooks/useTrackingHealth.ts` | Nielsen #5 Error prevention | Deliberately cheap (16×16 px, ~1×/sec) so it never competes with the real-time pose/render loop. |
+| Non-blocking `TrackingStatusBanner` — actionable, self-dismissing guidance ("Step back a little", "Try brighter lighting") shown *before* tracking actually fails | `src/components/game/TrackingStatusBanner.tsx` | Nielsen #1 Visibility of system status, #5 Error prevention, #9 Recognition & recovery | Distinct from `Stage.tsx`'s hard error state — this never covers or halts anything, it just informs. |
+| Low-confidence auto-pause: after 2s of continuous lost tracking during play, the session pauses itself with a friendly, distinct message instead of silently discarding input | `src/components/game/GameRunner.tsx` | Nielsen #5 Error prevention, #9 Error recovery; Shneiderman #5 Simple error handling | The player never has to notice on their own that nothing is registering — the system notices first. |
+| "Restart Mission" added to the pause menu | `src/components/game/GameRunner.tsx` | Nielsen #3 User control & freedom | No need to quit to the dashboard and re-enter just to start over. |
+| Subtle "✓ Progress saved" acknowledgment on the session recap | `src/components/game/VictoryScreen.tsx` | Nielsen #1 Visibility of system status | Deliberately not a toast on every write (that would violate Aesthetic & Minimalist Design) — shown once, at the one moment it's actually relevant. |
+
+## Phase D — Consistency, Navigation, User Control & Freedom
+
+| Feature | Implemented in | Principle(s) satisfied | Notes |
+|---|---|---|---|
+| Persistent header chrome (Home via logo, camera toggle, Settings & Accessibility) reachable from every screen, including mid-game | `src/App.tsx`, `src/components/layout/Header.tsx` | Nielsen #4 Consistency; Shneiderman #1 Strive for consistency | `Header` renders unconditionally outside the page-content branch — never unmounted while a game is active. |
+| "Restart Mission" (see Phase C) | `src/components/game/GameRunner.tsx` | Nielsen #3 User control & freedom | Counted here too — it's as much a navigation/control affordance as an error-recovery one. |
+
+**Scope note:** the planned extraction of shared `Button`/`Panel`/`Badge` primitives (a code-organization refactor, not a new user-facing capability) was deferred to keep this pass fast — the *visual* consistency it would enforce is already achieved via the shared design tokens from Phase A/B, which is the part that's actually user-visible.
+
+## Phase E — Onboarding & First-Run Experience
+
+| Feature | Implemented in | Principle(s) satisfied | Notes |
+|---|---|---|---|
+| Short, 4-step first-run flow (Welcome → Accessibility quick-setup → Camera & lighting expectations → First-mission recommendation) | `src/components/onboarding/Onboarding.tsx` | Nielsen #6 Recognition rather than recall, #10 Help & documentation; Shneiderman #4 Design dialogs to yield closure | Each step is a self-contained, closed unit with clear progress dots — the player always knows how much is left. |
+| "Skip" visible on every single step, not just the first | `src/components/onboarding/Onboarding.tsx` | Nielsen #3 User control & freedom; Shneiderman #6 Permit easy reversal | Onboarding is advisory, never a gate the player is trapped inside. |
+| Accessibility setup happens *during* onboarding (Theme, Text Size, Reduced Motion) using the same live settings store as the full Settings panel | `src/components/onboarding/Onboarding.tsx`, `src/core/services/SettingsStore.ts` | Nielsen #7 Flexibility & personalization | Verified live: toggling Theme here immediately reflects the player's earlier choice and stays in sync with the Settings panel — one source of truth, not a separate onboarding-only copy. |
+| One-time gate via a `localStorage` flag; "Replay Tutorial" always reachable afterward from Settings → Help | `src/App.tsx` (`onboarding_complete` flag), `src/components/ui/SettingsMenu.tsx` | Nielsen #10 Help & documentation; Shneiderman #6 Easy reversal | Never re-forced on returning users, but never permanently lost either. |
+| Honest, upfront privacy statement on the camera step ("your video is never uploaded or recorded") before the browser's own permission prompt appears | `src/components/onboarding/Onboarding.tsx` | Nielsen #5 Error prevention (of *distrust*, not just misuse); WCAG-adjacent trust/consent framing | Explains *why* the permission prompt is about to appear, rather than letting the browser's dialog be the player's first and only explanation. |

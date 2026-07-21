@@ -17,7 +17,7 @@ export function StatCard({ value, label, gradient, border, textColor, id }: Stat
       >
         {value}
       </div>
-      <div className="text-[10px] sm:text-xs text-white/60 font-bold uppercase tracking-wider">
+      <div className="text-[10px] sm:text-xs text-[var(--color-text-muted)] font-bold uppercase tracking-wider">
         {label}
       </div>
     </div>

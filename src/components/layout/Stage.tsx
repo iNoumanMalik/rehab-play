@@ -62,7 +62,7 @@ export function Stage({
             <p className="text-white/70 text-sm mt-3 mb-5">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold rounded-xl border border-violet-500/40 shadow-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
+              className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-[var(--color-text)] font-bold rounded-xl border border-violet-500/40 shadow-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
             >
               Retry
             </button>

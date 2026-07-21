@@ -14,7 +14,7 @@ export function ObjectiveBanner({ text }: ObjectiveBannerProps) {
   return (
     <div className="absolute top-14 sm:top-16 inset-x-0 z-20 flex justify-center px-4 pointer-events-none">
       <div className="max-w-[90%] px-4 py-1.5 rounded-full bg-black/55 border border-white/15 backdrop-blur-md shadow-lg">
-        <p className="text-white text-xs sm:text-sm font-bold text-center truncate">{text}</p>
+        <p className="text-[var(--color-text)] text-xs sm:text-sm font-bold text-center truncate">{text}</p>
       </div>
     </div>
   );

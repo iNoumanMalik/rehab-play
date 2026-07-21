@@ -1,13 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { usePoseEngine } from './hooks/usePoseEngine';
 import { useGameSession } from './hooks/useGameSession';
+import { useTrackingHealth } from './hooks/useTrackingHealth';
 import { Stage } from './components/layout/Stage';
 import { Header } from './components/layout/Header';
 import { FeedbackOverlay } from './components/game/FeedbackOverlay';
 import { ComboDisplay } from './components/game/ComboDisplay';
 import { VictoryScreen } from './components/game/VictoryScreen';
+import { TrackingStatusBanner } from './components/game/TrackingStatusBanner';
 import { ToastStack } from './components/ui/ToastStack';
 import { CaptionBar } from './components/ui/CaptionBar';
+import { Onboarding } from './components/onboarding/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { GameSession } from './pages/GameSession';
 import { GameRunner } from './components/game/GameRunner';
@@ -15,6 +18,7 @@ import { getAllGameMeta } from './games/gameRegistry';
 import { audioManager } from './core/services/AudioManager';
 import { assets } from './core/assets/AssetSystem';
 import { spriteManifest } from './core/assets/sprites';
+import { StorageService } from './core/services/StorageService';
 import { useSettings } from './hooks/useSettings';
 import type { GameId } from './types';
 
@@ -23,11 +27,13 @@ function App() {
   const [videoReady, setVideoReady] = useState(false);
   const [currentGame, setCurrentGame] = useState<string | null>(null);
   const [replayToken, setReplayToken] = useState(0);
+  const [showOnboarding, setShowOnboarding] = useState(() => !StorageService.get('onboarding_complete', false));
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { poseDataRef, isReady, error } = usePoseEngine(videoRef);
   const sessionKey = currentGame ? `${currentGame}:${replayToken}` : null;
   const session = useGameSession(sessionKey, poseDataRef);
   const [settings] = useSettings();
+  const trackingHealth = useTrackingHealth(videoRef, poseDataRef, isCameraOn && videoReady && isReady);
 
   useEffect(() => {
     audioManager.init();
@@ -96,6 +102,7 @@ function App() {
 
   return (
     <div className="relative min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] overflow-x-hidden">
+      {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
       <ToastStack />
       <CaptionBar />
       {/* Animated Background */}
@@ -114,20 +121,20 @@ function App() {
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
         {!isCameraOn ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 bg-white/[0.02] border border-white/[0.06] rounded-3xl p-8 sm:p-12 shadow-2xl backdrop-blur-md text-center max-w-3xl mx-auto">
+          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 sm:p-12 shadow-2xl backdrop-blur-md text-center max-w-3xl mx-auto">
             <div className="w-24 h-24 bg-rose-500/10 border border-rose-500/30 rounded-full flex items-center justify-center text-rose-400 text-4xl shadow-inner">
               🚫
             </div>
             <div className="max-w-lg">
-              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 bg-gradient-to-r from-[var(--color-text)] to-[var(--color-text)]/80 bg-clip-text text-transparent">
                 Camera is Disabled
               </h2>
-              <p className="text-white/70 text-sm sm:text-base leading-relaxed mb-6 font-medium">
+              <p className="text-[var(--color-text-muted)] text-sm sm:text-base leading-relaxed mb-6 font-medium">
                 RehabPlay requires a live webcam feed to track and translate your body movements into in-game gestures.
               </p>
               <button
                 onClick={toggleCamera}
-                className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-extrabold rounded-2xl border border-violet-500/40 shadow-lg hover:shadow-violet-500/25 transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
+                className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-[var(--color-text)] font-extrabold rounded-2xl border border-violet-500/40 shadow-lg hover:shadow-violet-500/25 transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
               >
                 📹 Enable Camera
               </button>
@@ -144,6 +151,7 @@ function App() {
               onVideoReady={handleVideoReady}
               onVideoStopped={handleVideoStopped}
             >
+              {videoReady && isReady && <TrackingStatusBanner health={trackingHealth} />}
               {currentGame && (
                 <>
                   <GameRunner

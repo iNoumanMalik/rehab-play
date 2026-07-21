@@ -54,6 +54,7 @@ export function GameRunner(props: GameRunnerProps) {
   const [phase, setPhase] = useState<Phase>('intro');
   const [calibUI, setCalibUI] = useState({ prompt: '', progress: 0, capturing: false, tracked: true });
   const [paused, setPaused] = useState(false);
+  const [autoPaused, setAutoPaused] = useState(false);
   const [over, setOver] = useState(false);
   const [hud, setHud] = useState<{ elapsedSec: number; health: SceneState['health'] | null }>({ elapsedSec: 0, health: null });
   const [objective, setObjective] = useState('');
@@ -75,6 +76,9 @@ export function GameRunner(props: GameRunnerProps) {
   const elapsedRef = useRef(0);
   const endedRef = useRef(false);
   const sceneSizeRef = useRef({ w: 0, h: 0 });
+  const untrackedPlayMsRef = useRef(0);
+
+  const AUTO_PAUSE_MS = 2000;
 
   const startPlaying = () => {
     const canvas = canvasRef.current;
@@ -89,7 +93,10 @@ export function GameRunner(props: GameRunnerProps) {
     lastObjectiveRef.current = '';
     elapsedRef.current = 0;
     endedRef.current = false;
+    untrackedPlayMsRef.current = 0;
     setOver(false);
+    setPaused(false);
+    setAutoPaused(false);
     setObjective('');
     setHud({ elapsedSec: 0, health: null });
     analyticsService.startSession(gameId);
@@ -116,12 +123,20 @@ export function GameRunner(props: GameRunnerProps) {
     const engine = engineRef.current;
     if (!engine) return;
     if (engine.paused) {
+      untrackedPlayMsRef.current = 0;
       engine.resume();
       setPaused(false);
+      setAutoPaused(false);
     } else {
       engine.pause();
       setPaused(true);
     }
+  };
+
+  /** Re-runs the current mission from a clean slate — User Control & Freedom, no need to quit and re-enter. */
+  const restartMission = () => {
+    engineRef.current?.resume();
+    startPlaying();
   };
 
   // Escape toggles pause during play, for keyboard-only players.
@@ -169,6 +184,20 @@ export function GameRunner(props: GameRunnerProps) {
         overlayRef.current.update(dt, input, canvas.width, canvas.height);
         overlayInputRef.current = input;
         return;
+      }
+
+      // Lost tracking during play — auto-pause after a sustained loss instead
+      // of silently eating inputs while the player can't see what's wrong.
+      if (!tracked) {
+        untrackedPlayMsRef.current += dt * 1000;
+        if (untrackedPlayMsRef.current > AUTO_PAUSE_MS && !engineRef.current?.paused) {
+          engineRef.current?.pause();
+          setPaused(true);
+          setAutoPaused(true);
+          return;
+        }
+      } else {
+        untrackedPlayMsRef.current = 0;
       }
 
       const scene = sceneRef.current;
@@ -272,23 +301,23 @@ export function GameRunner(props: GameRunnerProps) {
       {phase === 'intro' && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/60 backdrop-blur-sm text-center px-6">
           <div className="max-w-md">
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">{registration.exercise.name}</h3>
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text)] mb-2">{registration.exercise.name}</h3>
             <p className="text-violet-200/90 text-sm font-semibold mb-1">🎯 {registration.exercise.rehabFocus}</p>
-            <p className="text-white/70 text-sm leading-relaxed">
+            <p className="text-[var(--color-text-muted)] text-sm leading-relaxed">
               We'll quickly measure your range of motion so the game adapts to you — only clean, correct movements will score.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={beginCalibration}
-              className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-extrabold rounded-2xl border border-violet-500/40 shadow-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
+              className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-[var(--color-text)] font-extrabold rounded-2xl border border-violet-500/40 shadow-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
             >
               {savedFresh ? '📏 Recalibrate' : '📏 Calibrate & Start'}
             </button>
             {savedFresh && (
               <button
                 onClick={useSavedCalibration}
-                className="px-8 py-4 bg-white/[0.06] hover:bg-white/[0.12] text-white font-bold rounded-2xl border border-white/[0.12] transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+                className="px-8 py-4 bg-[var(--color-surface-strong)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text)] font-bold rounded-2xl border border-[var(--color-border-strong)] transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-white/30"
               >
                 ▶ Use my saved range
               </button>
@@ -307,18 +336,31 @@ export function GameRunner(props: GameRunnerProps) {
       )}
 
       {paused && (
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-black/70 backdrop-blur-md text-center px-6">
-          <h3 className="text-3xl font-extrabold text-white">⏸ Paused</h3>
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-black/70 backdrop-blur-md text-center px-6" role="status" aria-live="polite">
+          {autoPaused ? (
+            <>
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text)]">🧍 We lost sight of you</h3>
+              <p className="text-white/70 text-sm max-w-sm">Step back into frame so your head, shoulders and hands are all visible, then resume whenever you're ready.</p>
+            </>
+          ) : (
+            <h3 className="text-3xl font-extrabold text-[var(--color-text)]">⏸ Paused</h3>
+          )}
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={togglePause}
-              className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-extrabold rounded-2xl border border-violet-500/40 shadow-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
+              className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-[var(--color-text)] font-extrabold rounded-2xl border border-violet-500/40 shadow-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
             >
-              ▶ Resume
+              {autoPaused ? "▶ I'm back — Resume" : '▶ Resume'}
+            </button>
+            <button
+              onClick={restartMission}
+              className="px-8 py-4 bg-[var(--color-surface-strong)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text)] font-bold rounded-2xl border border-[var(--color-border-strong)] transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+            >
+              🔁 Restart Mission
             </button>
             <button
               onClick={props.onQuit}
-              className="px-8 py-4 bg-white/[0.06] hover:bg-white/[0.12] text-white font-bold rounded-2xl border border-white/[0.12] transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+              className="px-8 py-4 bg-[var(--color-surface-strong)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text)] font-bold rounded-2xl border border-[var(--color-border-strong)] transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-white/30"
             >
               Quit to Dashboard
             </button>

@@ -22,12 +22,12 @@ export function HUD({ elapsedSec, health, paused, onTogglePause }: HUDProps) {
       <button
         onClick={onTogglePause}
         aria-label={paused ? 'Resume' : 'Pause'}
-        className="pointer-events-auto flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-white text-base backdrop-blur-md transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+        className="pointer-events-auto flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-[var(--color-text)] text-base backdrop-blur-md transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
       >
         {paused ? '▶' : '⏸'}
       </button>
 
-      <div className="pointer-events-none flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border border-white/20 backdrop-blur-md text-white text-xs sm:text-sm font-bold tabular-nums">
+      <div className="pointer-events-none flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border border-white/20 backdrop-blur-md text-[var(--color-text)] text-xs sm:text-sm font-bold tabular-nums">
         ⏱ {formatTime(elapsedSec)}
       </div>
 

@@ -15,7 +15,7 @@ const GAME_META: Record<string, GameMeta> = {
     rehabFocus: 'Shoulder flexion, lateral reaching',
     gradient: 'from-pink-600/30 via-rose-600/15 to-purple-600/30',
     border: 'border-pink-500/40 hover:border-pink-400/80',
-    tagColor: 'text-pink-200 bg-pink-500/25',
+    tagColor: 'text-pink-700 dark:text-pink-200 bg-pink-500/25',
     hoverGlow: 'shadow-pink-500/30',
   },
   'fruit-harvest': {
@@ -27,7 +27,7 @@ const GAME_META: Record<string, GameMeta> = {
     rehabFocus: 'Full ROM, shoulder flexion, lateral bending',
     gradient: 'from-orange-600/30 via-amber-600/15 to-red-600/30',
     border: 'border-orange-500/40 hover:border-orange-400/80',
-    tagColor: 'text-orange-200 bg-orange-500/25',
+    tagColor: 'text-orange-700 dark:text-orange-200 bg-orange-500/25',
     hoverGlow: 'shadow-orange-500/30',
   },
   'crystal-guardian': {
@@ -39,7 +39,7 @@ const GAME_META: Record<string, GameMeta> = {
     rehabFocus: 'Bilateral overhead press, shoulder stability',
     gradient: 'from-blue-600/30 via-cyan-600/15 to-teal-600/30',
     border: 'border-blue-500/40 hover:border-blue-400/80',
-    tagColor: 'text-cyan-200 bg-cyan-500/25',
+    tagColor: 'text-cyan-700 dark:text-cyan-200 bg-cyan-500/25',
     hoverGlow: 'shadow-blue-500/30',
   },
   'cosmic-defender': {
@@ -51,7 +51,7 @@ const GAME_META: Record<string, GameMeta> = {
     rehabFocus: 'Reach, lean, head mobility, shoulder circles',
     gradient: 'from-indigo-600/30 via-violet-600/15 to-fuchsia-600/30',
     border: 'border-indigo-500/40 hover:border-indigo-400/80',
-    tagColor: 'text-indigo-200 bg-indigo-500/25',
+    tagColor: 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/25',
     hoverGlow: 'shadow-indigo-500/30',
   },
 };

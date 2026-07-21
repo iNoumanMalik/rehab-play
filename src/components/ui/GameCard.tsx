@@ -20,18 +20,18 @@ export function GameCard({ meta, onClick }: GameCardProps) {
           {meta.tag}
         </span>
       </div>
-      <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 text-white group-hover:text-white transition-colors">
+      <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 text-[var(--color-text)] group-hover:text-[var(--color-text)] transition-colors">
         {meta.title}
       </h3>
-      <p className="text-white/70 text-sm sm:text-base leading-relaxed mb-5 sm:mb-6 font-medium">
+      <p className="text-[var(--color-text-muted)] text-sm sm:text-base leading-relaxed mb-5 sm:mb-6 font-medium">
         {meta.description}
       </p>
       <div className="flex items-center gap-1.5 flex-wrap mb-4">
-        <span className="text-[10px] sm:text-xs text-white/50 font-semibold uppercase tracking-wider bg-white/5 px-2.5 py-1 rounded-full">
+        <span className="text-[10px] sm:text-xs text-[var(--color-text-faint)] font-semibold uppercase tracking-wider bg-white/5 px-2.5 py-1 rounded-full">
           {meta.rehabFocus}
         </span>
       </div>
-      <div className="flex items-center font-bold text-sm sm:text-base text-white/80 group-hover:text-white">
+      <div className="flex items-center font-bold text-sm sm:text-base text-[var(--color-text)] group-hover:text-[var(--color-text)]">
         <span className="relative py-1 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-white after:transition-all after:duration-300 group-hover:after:w-full">
           Start Session
         </span>

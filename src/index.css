@@ -3,6 +3,12 @@
 
 @import "tailwindcss";
 
+/* Ties Tailwind's dark: variant to our data-theme attribute (instead of the
+   default prefers-color-scheme media query) so the same utility classes can
+   give brand-colored badges (e.g. text-violet-200 on a translucent chip) a
+   light-mode-safe counterpart without a bespoke class per badge. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 @layer base {
   /*
    * Design tokens — semantic CSS custom properties, not Tailwind's @theme

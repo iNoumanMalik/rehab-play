@@ -10,7 +10,7 @@ export function FeedbackOverlay({ messages, visible }: FeedbackOverlayProps) {
     if (msg.includes('Excellent') || msg.includes('Great') || msg.includes('Full range') || msg.includes('perfect')) return 'text-emerald-300 bg-emerald-500/20 border-emerald-500/30';
     if (msg.includes('control') || msg.includes('good') || msg.includes('Nice')) return 'text-blue-300 bg-blue-500/20 border-blue-500/30';
     if (msg.includes('higher') || msg.includes('Straighten') || msg.includes('Reach') || msg.includes('further')) return 'text-amber-300 bg-amber-500/20 border-amber-500/30';
-    return 'text-white bg-white/10 border-white/20';
+    return 'text-[var(--color-text)] bg-[var(--color-surface-hover)] border-white/20';
   };
 
   return (

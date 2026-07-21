@@ -26,13 +26,13 @@ export function ToastStack() {
         >
           <span className="text-2xl flex-shrink-0 leading-none mt-0.5">{t.icon}</span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-extrabold text-white truncate">{t.title}</p>
-            {t.description && <p className="text-xs text-white/70 mt-0.5 leading-snug">{t.description}</p>}
+            <p className="text-sm font-extrabold text-[var(--color-text)] truncate">{t.title}</p>
+            {t.description && <p className="text-xs text-[var(--color-text-muted)] mt-0.5 leading-snug">{t.description}</p>}
           </div>
           <button
             onClick={() => toastStore.dismiss(t.id)}
             aria-label="Dismiss"
-            className="text-white/40 hover:text-white/80 text-lg leading-none cursor-pointer flex-shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
+            className="text-[var(--color-text-faint)] hover:text-[var(--color-text)] text-lg leading-none cursor-pointer flex-shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
           >
             ×
           </button>

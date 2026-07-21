@@ -248,10 +248,20 @@ export function SettingsMenu() {
                 </div>
 
                 <div className="pt-1">
+                  <SectionHeading>Help</SectionHeading>
+                  <button
+                    onClick={() => { StorageService.remove('onboarding_complete'); window.location.reload(); }}
+                    className="w-full text-left py-2.5 px-1 text-sm font-bold text-[var(--color-text)] hover:text-[var(--color-accent)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded-lg"
+                  >
+                    🔁 Replay Tutorial
+                  </button>
+                </div>
+
+                <div className="pt-1">
                   <SectionHeading>Data</SectionHeading>
                   <button
                     onClick={() => setConfirmingReset(true)}
-                    className="w-full text-left py-2.5 px-1 text-sm font-bold text-rose-400 hover:text-rose-300 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-rose-400 rounded-lg"
+                    className="w-full text-left py-2.5 px-1 text-sm font-bold text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-rose-400 rounded-lg"
                   >
                     🗑 Reset My Progress…
                   </button>
