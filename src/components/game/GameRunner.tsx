@@ -9,6 +9,7 @@ import type { ExerciseFrame } from '../../core/exercise';
 import { audioManager } from '../../core/services/AudioManager';
 import { analyticsService } from '../../core/services/AnalyticsService';
 import { settingsStore } from '../../core/services/SettingsStore';
+import { voiceGuidance } from '../../core/services/VoiceGuidanceService';
 import { getGameRegistration } from '../../games/gameRegistry';
 import { CalibrationOverlay } from './CalibrationOverlay';
 import { HUD } from './HUD';
@@ -68,6 +69,7 @@ export function GameRunner(props: GameRunnerProps) {
   const lastStateRef = useRef<SceneState>(EMPTY_STATE);
   const lastFeedbackRef = useRef<string>('');
   const lastObjectiveRef = useRef('');
+  const lastCalibPromptRef = useRef('');
   const frameCountRef = useRef(0);
   const hudTickRef = useRef(0);
   const elapsedRef = useRef(0);
@@ -99,6 +101,7 @@ export function GameRunner(props: GameRunnerProps) {
     audioManager.init();
     const { neutralPrompt, maxPrompt } = registration.exercise.calibration;
     calibSessionRef.current = new CalibrationSession(neutralPrompt, maxPrompt);
+    lastCalibPromptRef.current = '';
     phaseRef.current = 'calibrating';
     setPhase('calibrating');
   };
@@ -149,6 +152,10 @@ export function GameRunner(props: GameRunnerProps) {
           lastEffortRef.current = effort;
           session.update(effort, dt);
           setCalibUI({ prompt: session.prompt, progress: session.stepProgress, capturing: session.capturing, tracked });
+          if (session.prompt !== lastCalibPromptRef.current) {
+            lastCalibPromptRef.current = session.prompt;
+            voiceGuidance.speak(session.prompt, { interrupt: true });
+          }
           if (session.done) {
             calibration.set(session.neutral, session.max, new Date().toISOString());
             startPlaying();
@@ -197,6 +204,7 @@ export function GameRunner(props: GameRunnerProps) {
       if (objectiveText !== lastObjectiveRef.current) {
         lastObjectiveRef.current = objectiveText;
         setObjective(objectiveText);
+        voiceGuidance.speak(objectiveText);
       }
 
       hudTickRef.current++;

@@ -3,6 +3,7 @@ import type { Calibration } from './Calibration';
 import { CoachEngine } from './CoachEngine';
 import { RepDetector } from './RepDetector';
 import { trunkLeanDeg, elevationAsymmetry, upperBodyTracked } from './metrics';
+import { settingsStore, type Settings } from '../services/SettingsStore';
 import type { CompensationFlag, ExerciseDefinition, ExerciseFrame } from './types';
 
 /**
@@ -16,6 +17,37 @@ import type { CompensationFlag, ExerciseDefinition, ExerciseFrame } from './type
 // good frame (minus the rep-completion event, which only fires on live data).
 const TRACKING_GRACE_MS = 400;
 
+const DIFFICULTY_FACTOR: Record<Settings['difficulty'], number> = {
+  gentle: 0.82,
+  standard: 1,
+  challenging: 1.12,
+};
+
+/**
+ * Difficulty + Motion Sensitivity are Personalization settings (Flexibility &
+ * Personalization) that must actually change how movements are gated, not sit
+ * as inert toggles. Rather than mutate the shared, module-level exercise
+ * definitions (they're singletons reused across every session), build a tuned
+ * copy once per session: "gentle"/looser sensitivity lowers how much range is
+ * required and how strictly lean/asymmetry/speed compensations are flagged;
+ * "challenging"/tighter sensitivity raises the bar. `strictness` is clamped so
+ * an exercise never becomes impossible or trivially free-scoring.
+ */
+function tuneDefinition(def: ExerciseDefinition, settings: Settings): ExerciseDefinition {
+  const strictness = Math.max(0.6, Math.min(1.4, DIFFICULTY_FACTOR[settings.difficulty] * settings.motionSensitivity));
+  if (strictness === 1) return def;
+  return {
+    ...def,
+    engageThreshold: Math.max(0.05, def.engageThreshold * strictness),
+    repThreshold: Math.max(0.1, def.repThreshold * strictness),
+    releaseThreshold: Math.max(0.05, def.releaseThreshold * strictness),
+    minHoldMs: Math.max(0, Math.round(def.minHoldMs * strictness)),
+    maxTrunkLeanDeg: def.maxTrunkLeanDeg / strictness,
+    maxAsymmetry: def.maxAsymmetry / strictness,
+    maxRepVelocity: def.maxRepVelocity / strictness,
+  };
+}
+
 export class ExerciseEngine {
   private def: ExerciseDefinition;
   private calibration: Calibration;
@@ -27,10 +59,10 @@ export class ExerciseEngine {
   private lastGoodFrame: ExerciseFrame | null = null;
 
   constructor(def: ExerciseDefinition, calibration: Calibration) {
-    this.def = def;
+    this.def = tuneDefinition(def, settingsStore.get());
     this.calibration = calibration;
-    this.reps = new RepDetector(def);
-    this.coach = new CoachEngine(def);
+    this.reps = new RepDetector(this.def);
+    this.coach = new CoachEngine(this.def);
   }
 
   process(pose: PoseData | null, dt: number): ExerciseFrame {

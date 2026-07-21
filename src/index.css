@@ -1,28 +1,122 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap');
 
 @import "tailwindcss";
 
 @layer base {
+  /*
+   * Design tokens — semantic CSS custom properties, not Tailwind's @theme
+   * registration, so dark/light/high-contrast can compose via plain cascade
+   * without fighting Tailwind's opacity-modifier color parsing. Components
+   * consume these via arbitrary-value classes, e.g. bg-[var(--color-bg)].
+   * Dark values below are intentionally identical to the app's original
+   * hardcoded colors, so introducing tokens is a zero-regression step; Light
+   * and High Contrast are real, separately-designed palettes, not inversions.
+   */
+  :root {
+    --color-bg: #070B1A;
+    --color-bg-elevated: #0d1226;
+    --color-surface: rgba(255, 255, 255, 0.03);
+    --color-surface-strong: rgba(255, 255, 255, 0.06);
+    --color-surface-hover: rgba(255, 255, 255, 0.10);
+    --color-border: rgba(255, 255, 255, 0.10);
+    --color-border-strong: rgba(255, 255, 255, 0.18);
+    --color-text: #ffffff;
+    --color-text-muted: rgba(255, 255, 255, 0.68);
+    --color-text-faint: rgba(255, 255, 255, 0.5);
+    --color-accent: #8b5cf6;
+    --color-accent-strong: #7c3aed;
+    --color-accent-text: #ddd6fe;
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-danger: #f87171;
+    --color-focus-ring: #8b5cf6;
+    --font-scale: 1;
+    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /* Light theme — a real palette, not a naive inversion of dark. */
+  :root[data-theme='light'] {
+    --color-bg: #F4F5FB;
+    --color-bg-elevated: #FFFFFF;
+    --color-surface: rgba(15, 23, 42, 0.035);
+    --color-surface-strong: rgba(15, 23, 42, 0.07);
+    --color-surface-hover: rgba(15, 23, 42, 0.11);
+    --color-border: rgba(15, 23, 42, 0.12);
+    --color-border-strong: rgba(15, 23, 42, 0.22);
+    --color-text: #10162B;
+    --color-text-muted: rgba(16, 22, 43, 0.68);
+    --color-text-faint: rgba(16, 22, 43, 0.52);
+    --color-accent: #7c3aed;
+    --color-accent-strong: #6d28d9;
+    --color-accent-text: #5b21b6;
+    --color-success: #0d9268;
+    --color-warning: #b45309;
+    --color-danger: #dc2626;
+    --color-focus-ring: #6d28d9;
+  }
+
+  /* High Contrast — composes on top of either theme: solid borders, no translucency, max text contrast. */
+  :root[data-contrast='high'] {
+    --color-surface: var(--color-bg-elevated);
+    --color-surface-strong: var(--color-bg-elevated);
+    --color-surface-hover: var(--color-bg-elevated);
+    --color-border: var(--color-text);
+    --color-border-strong: var(--color-text);
+    --color-text-muted: var(--color-text);
+    --color-text-faint: var(--color-text);
+  }
+  :root[data-contrast='high'][data-theme='light'] {
+    --color-accent: #4c1d95;
+    --color-accent-strong: #3b0764;
+    --color-success: #065f46;
+    --color-warning: #7c2d12;
+    --color-danger: #7f1d1d;
+  }
+  :root[data-contrast='high']:not([data-theme='light']) {
+    --color-bg: #000000;
+    --color-bg-elevated: #000000;
+    --color-accent: #b794ff;
+    --color-success: #4ade80;
+    --color-warning: #fde047;
+    --color-danger: #ff8a80;
+  }
+
+  /* Text size — scales rem-based Tailwind text utilities app-wide via the root font size. */
+  :root[data-text-size='sm'] { --font-scale: 0.9; }
+  :root[data-text-size='md'] { --font-scale: 1; }
+  :root[data-text-size='lg'] { --font-scale: 1.15; }
+  :root[data-text-size='xl'] { --font-scale: 1.35; }
+
+  :root[data-dyslexia='true'] {
+    --font-sans: 'Atkinson Hyperlegible', 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  html {
+    font-size: calc(16px * var(--font-scale));
+  }
+
   body {
     margin: 0;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-      'Helvetica Neue', Arial, sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: #070B1A;
-    color: #fff;
+    background: var(--color-bg);
+    color: var(--color-text);
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   /* Accessible focus indicators across the app */
   a:focus-visible,
   button:focus-visible {
-    outline: 2px solid #8b5cf6;
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 4px;
   }
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    scrollbar-color: var(--color-border-strong) transparent;
   }
 
   *::-webkit-scrollbar {
@@ -35,13 +129,13 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--color-border-strong);
     border-radius: 4px;
-    border: 2px solid #070B1A;
+    border: 2px solid var(--color-bg);
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--color-text-faint);
   }
 
   @keyframes fadeInUp {

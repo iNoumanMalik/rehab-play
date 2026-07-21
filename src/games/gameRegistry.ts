@@ -3,6 +3,7 @@ import type { GameRegistration } from '../core/exercise';
 import { butterflyGame } from './butterfly-rescue/butterflyGame';
 import { fruitGame } from './fruit-harvest/fruitGame';
 import { crystalGame } from './crystal-guardian/crystalGame';
+import { cosmicGame } from './cosmic-defender/cosmicGame';
 
 const GAME_META: Record<string, GameMeta> = {
   'butterfly-rescue': {
@@ -41,12 +42,25 @@ const GAME_META: Record<string, GameMeta> = {
     tagColor: 'text-cyan-200 bg-cyan-500/25',
     hoverGlow: 'shadow-blue-500/30',
   },
+  'cosmic-defender': {
+    id: 'cosmic-defender',
+    title: 'Cosmic Defender',
+    description: 'Pilot a station defense grid: aim by reaching, fire by punching, dodge by leaning, and sweep the radar with your head through 13 escalating encounters.',
+    tag: 'Reaction & Coordination',
+    icon: '🛰️',
+    rehabFocus: 'Reach, lean, head mobility, shoulder circles',
+    gradient: 'from-indigo-600/30 via-violet-600/15 to-fuchsia-600/30',
+    border: 'border-indigo-500/40 hover:border-indigo-400/80',
+    tagColor: 'text-indigo-200 bg-indigo-500/25',
+    hoverGlow: 'shadow-indigo-500/30',
+  },
 };
 
 const REGISTRATIONS: Record<string, GameRegistration> = {
   'butterfly-rescue': butterflyGame,
   'fruit-harvest': fruitGame,
   'crystal-guardian': crystalGame,
+  'cosmic-defender': cosmicGame,
 };
 
 export function getGameMeta(id: string): GameMeta | undefined {

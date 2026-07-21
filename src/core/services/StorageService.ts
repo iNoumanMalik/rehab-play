@@ -27,4 +27,23 @@ export class StorageService {
     StorageService.set(key, next);
     return next;
   }
+
+  /**
+   * Clears XP/level/streak, session history, achievements, and every
+   * per-exercise calibration baseline — everything that represents "progress"
+   * — while deliberately leaving accessibility/audio/gameplay settings alone
+   * (resetting progress and resetting preferences are different user intents).
+   */
+  static resetProgress(): void {
+    const KEYS = ['progression', 'session_history', 'total_score', 'total_sessions', 'unlocked_achievements'];
+    for (const k of KEYS) StorageService.remove(k);
+
+    const calibPrefix = 'rehab_calib_';
+    const toRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(calibPrefix)) toRemove.push(key);
+    }
+    toRemove.forEach(k => localStorage.removeItem(k));
+  }
 }

@@ -7,6 +7,7 @@ import { FeedbackOverlay } from './components/game/FeedbackOverlay';
 import { ComboDisplay } from './components/game/ComboDisplay';
 import { VictoryScreen } from './components/game/VictoryScreen';
 import { ToastStack } from './components/ui/ToastStack';
+import { CaptionBar } from './components/ui/CaptionBar';
 import { Dashboard } from './pages/Dashboard';
 import { GameSession } from './pages/GameSession';
 import { GameRunner } from './components/game/GameRunner';
@@ -39,11 +40,22 @@ function App() {
     document.documentElement.classList.toggle('reduce-motion', settings.reducedMotion);
   }, [settings.reducedMotion]);
 
+  // Theme / contrast / text-size / dyslexia-font — stamped once before first
+  // paint in main.tsx; kept in sync here as the user changes them live.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = settings.theme;
+    root.dataset.contrast = settings.highContrast ? 'high' : 'normal';
+    root.dataset.textSize = settings.textSize;
+    root.dataset.dyslexia = String(settings.dyslexiaFont);
+  }, [settings.theme, settings.highContrast, settings.textSize, settings.dyslexiaFont]);
+
   // Apply audio settings.
   useEffect(() => {
     audioManager.setSfxEnabled(settings.sfxOn);
-    audioManager.setMasterVolume(settings.volume);
-  }, [settings.sfxOn, settings.volume]);
+    audioManager.setMusicVolume(settings.musicVolume);
+    audioManager.setSFXVolume(settings.sfxVolume);
+  }, [settings.sfxOn, settings.musicVolume, settings.sfxVolume]);
 
   // Ambient music plays only during a game and only when enabled.
   useEffect(() => {
@@ -83,8 +95,9 @@ function App() {
   const games = getAllGameMeta();
 
   return (
-    <div className="relative min-h-screen bg-[#070B1A] text-white overflow-x-hidden">
+    <div className="relative min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] overflow-x-hidden">
       <ToastStack />
+      <CaptionBar />
       {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className={`absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-violet-600/15 via-transparent to-cyan-600/15 rounded-full blur-[140px] ${settings.reducedMotion ? '' : 'animate-[pulse_10s_ease-in-out_infinite]'}`} />

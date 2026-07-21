@@ -1,6 +1,6 @@
 import type { JointAngles, MovementData } from './pose';
 
-export type GameId = 'butterfly-rescue' | 'fruit-harvest' | 'crystal-guardian';
+export type GameId = 'butterfly-rescue' | 'fruit-harvest' | 'crystal-guardian' | 'cosmic-defender';
 
 export interface GameMeta {
   id: GameId;

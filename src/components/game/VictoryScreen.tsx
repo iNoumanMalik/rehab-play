@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import type { GameStats, GameId, Achievement } from '../../types';
 import type { SessionRewardResult } from '../../core/services/ProgressionStore';
 import { StatCard } from '../ui/StatCard';
+import { voiceGuidance } from '../../core/services/VoiceGuidanceService';
 
 interface VictoryScreenProps {
   gameId: GameId;
@@ -26,6 +28,15 @@ const STATS_CONFIG = [
  */
 export function VictoryScreen({ won, stats, reward, achievements, onPlayAgain, onBack }: VictoryScreenProps) {
   const xpPct = reward ? Math.min(1, reward.xpIntoLevel / Math.max(1, reward.xpForNextLevel)) : 0;
+
+  useEffect(() => {
+    const headline = won
+      ? `Victory! Final score ${stats.score}, ${stats.accuracy} percent accuracy.`
+      : `Session complete. Final score ${stats.score}.`;
+    voiceGuidance.speak(headline, { interrupt: true });
+    // Announce once, when the recap first appears.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div

@@ -76,7 +76,7 @@ export function Dashboard({ games, onStartGame }: DashboardProps) {
         </div>
       </div>
 
-      <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
+      <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 sm:gap-6 lg:gap-8">
         {games.map((meta) => (
           <GameCard key={meta.id} meta={meta} onClick={() => onStartGame(meta.id)} />
         ))}
