@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { SettingsMenu } from '../ui/SettingsMenu';
 import { Badge } from '../ui/primitives/Badge';
 import { useSettings } from '../../hooks/useSettings';
@@ -19,7 +20,7 @@ export function Header({ isCameraOn, videoReady, isReady, onToggleCamera }: Head
             <div className="relative w-11 h-11 sm:w-12 sm:h-12 flex-shrink-0">
               <div className={`absolute inset-0 bg-accent rounded-xl sm:rounded-2xl opacity-40 blur-md ${reducedMotion ? '' : 'animate-pulse'}`} />
               <div className="relative w-full h-full bg-accent rounded-xl sm:rounded-2xl flex items-center justify-center shadow-1">
-                <span className="text-xl sm:text-2xl">⚡</span>
+                <span aria-hidden="true" className="text-xl sm:text-2xl">⚡</span>
               </div>
             </div>
             <div>
@@ -33,6 +34,12 @@ export function Header({ isCameraOn, videoReady, isReady, onToggleCamera }: Head
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              to="/progress"
+              className="hidden sm:inline-flex items-center px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold text-muted hover:text-text hover:bg-surface-hover transition-all duration-[var(--dur-base)] outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus-ring)]/40"
+            >
+              Progress
+            </Link>
             <button
               onClick={onToggleCamera}
               className={`flex items-center gap-2 px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold border transition-all duration-[var(--dur-base)] shadow-1 cursor-pointer focus-visible:ring-4 focus-visible:ring-[var(--color-focus-ring)]/40 outline-none ${

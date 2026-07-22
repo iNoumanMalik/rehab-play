@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSettings } from '../../hooks/useSettings';
 import { voiceGuidance } from '../../core/services/VoiceGuidanceService';
 import { StorageService } from '../../core/services/StorageService';
-import type { Difficulty, DominantArm, TextSize, Theme } from '../../core/services/SettingsStore';
+import type { Difficulty, DominantArm } from '../../core/services/SettingsStore';
+import { THEME_OPTIONS, TEXT_SIZE_OPTIONS } from './settingsOptions';
 
-function Switch({ label, description, checked, onChange, disabled }: {
+export function Switch({ label, description, checked, onChange, disabled }: {
   label: string; description: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean;
 }) {
   return (
@@ -90,16 +91,6 @@ function SectionHeading({ children }: { children: ReactNode }) {
   return <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-text-faint)] mt-5 mb-1 px-1 first:mt-0">{children}</h3>;
 }
 
-const THEME_OPTIONS: { value: Theme; label: string }[] = [
-  { value: 'dark', label: '🌙 Dark' },
-  { value: 'light', label: '☀️ Light' },
-];
-const TEXT_SIZE_OPTIONS: { value: TextSize; label: string }[] = [
-  { value: 'sm', label: 'Small' },
-  { value: 'md', label: 'Medium' },
-  { value: 'lg', label: 'Large' },
-  { value: 'xl', label: 'X-Large' },
-];
 const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
   { value: 'gentle', label: 'Gentle' },
   { value: 'standard', label: 'Standard' },
@@ -138,7 +129,16 @@ function ResetProgressConfirm({ onCancel, onConfirmed }: { onCancel: () => void;
   );
 }
 
-export function SettingsMenu() {
+interface SettingsMenuProps {
+  /** Fixed light-on-dark trigger styling, and the panel opens upward instead
+   * of down — for mounting inside Stage's fullscreen chrome, where the
+   * trigger sits near the bottom of the screen (an opens-downward panel would
+   * be clipped by Stage's overflow-hidden) and the surrounding chrome is a
+   * fixed-dark camera scrim that doesn't follow the Theme setting. */
+  onDark?: boolean;
+}
+
+export function SettingsMenu({ onDark = false }: SettingsMenuProps = {}) {
   const [open, setOpen] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [s, set] = useSettings();
@@ -147,7 +147,25 @@ export function SettingsMenu() {
   useEffect(() => {
     if (!open) return;
     panelRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setOpen(false); return; }
+      // Focus trap: keep Tab cycling within the dialog while it's open,
+      // instead of letting it escape into the covered background (WCAG 2.4.3).
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      const focusables = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
@@ -164,7 +182,11 @@ export function SettingsMenu() {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(o => !o)}
-        className="flex items-center justify-center w-11 h-11 rounded-full bg-[var(--color-surface-strong)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-accent)]/50"
+        className={
+          onDark
+            ? 'flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-white/40'
+            : 'flex items-center justify-center w-11 h-11 rounded-full bg-[var(--color-surface-strong)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-accent)]/50'
+        }
       >
         ⚙️
       </button>
@@ -178,7 +200,11 @@ export function SettingsMenu() {
             role="dialog"
             aria-modal="true"
             aria-label="Settings & Accessibility"
-            className="fixed sm:absolute right-0 left-0 sm:left-auto top-16 sm:top-auto sm:mt-3 mx-auto sm:mx-0 w-[calc(100%-2rem)] sm:w-80 max-h-[75vh] overflow-y-auto z-50 bg-[var(--color-bg-elevated)] backdrop-blur-xl border border-[var(--color-border)] rounded-2xl shadow-2xl p-4 outline-none"
+            className={
+              onDark
+                ? 'fixed sm:absolute right-0 left-0 sm:left-auto bottom-16 sm:bottom-full sm:top-auto sm:mb-3 mx-auto sm:mx-0 w-[calc(100%-2rem)] sm:w-80 max-h-[75vh] overflow-y-auto z-50 bg-[var(--color-bg-elevated)] backdrop-blur-xl border border-[var(--color-border)] rounded-2xl shadow-2xl p-4 outline-none'
+                : 'fixed sm:absolute right-0 left-0 sm:left-auto top-16 sm:top-auto sm:mt-3 mx-auto sm:mx-0 w-[calc(100%-2rem)] sm:w-80 max-h-[75vh] overflow-y-auto z-50 bg-[var(--color-bg-elevated)] backdrop-blur-xl border border-[var(--color-border)] rounded-2xl shadow-2xl p-4 outline-none'
+            }
           >
             <div className="flex items-center justify-between mb-1 px-1">
               <h2 className="text-sm font-black text-[var(--color-text)]">Settings & Accessibility</h2>

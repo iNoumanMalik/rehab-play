@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { GameCard } from '../components/ui/GameCard';
 import { StatCard } from '../components/ui/StatCard';
@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/primitives/Badge';
 import { StorageService } from '../core/services/StorageService';
 import { achievementService } from '../core/services/AchievementService';
 import { useProgression } from '../hooks/useProgression';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { AppOutletContext } from '../App';
 import gsap from 'gsap';
 
@@ -13,12 +14,23 @@ export function LandingPage() {
   const { games, startGame } = useOutletContext<AppOutletContext>();
   const headerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useDocumentTitle('RehabPlay — Gamified Physiotherapy');
+  useEffect(() => { headingRef.current?.focus(); }, []);
 
   const totalScore = StorageService.get<number>('total_score', 0);
   const totalSessions = StorageService.get<number>('total_sessions', 0);
   const achievements = achievementService.getUnlocked().length;
   const totalAchievements = achievementService.getAll().length;
   const { level, xpIntoLevel, xpForNextLevel, streakDays, dailyGoalCount, dailyGoalTarget } = useProgression();
+
+  // Filter by focus area (Hick's Law — a flat, uncategorized grid of 7+ games
+  // doesn't scale). Reuses the existing `tag` field rather than inventing a
+  // new taxonomy field.
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const tags = useMemo(() => Array.from(new Set(games.map(g => g.tag))), [games]);
+  const visibleGames = activeTag ? games.filter(g => g.tag === activeTag) : games;
 
   useEffect(() => {
     if (headerRef.current) {
@@ -36,7 +48,7 @@ export function LandingPage() {
   return (
     <div className="space-y-10 sm:space-y-12">
       <div ref={headerRef} className="text-center sm:text-left">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-text font-display tracking-tight">
+        <h1 ref={headingRef} tabIndex={-1} className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-text font-display tracking-tight outline-none">
           Move better, every day
         </h1>
         <p className="text-muted mt-2 sm:mt-3 text-sm sm:text-base max-w-2xl leading-relaxed">
@@ -72,8 +84,33 @@ export function LandingPage() {
 
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-text font-display mb-4 sm:mb-6">Choose your exercise</h2>
+
+        <div role="group" aria-label="Filter by focus area" className="flex flex-wrap gap-2 mb-5 sm:mb-6">
+          <button
+            onClick={() => setActiveTag(null)}
+            aria-pressed={activeTag === null}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${
+              activeTag === null ? 'bg-accent border-accent text-white' : 'bg-surface-strong border-border text-muted hover:bg-surface-hover'
+            }`}
+          >
+            All
+          </button>
+          {tags.map(tag => (
+            <button
+              key={tag}
+              onClick={() => setActiveTag(tag)}
+              aria-pressed={activeTag === tag}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${
+                activeTag === tag ? 'bg-accent border-accent text-white' : 'bg-surface-strong border-border text-muted hover:bg-surface-hover'
+              }`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+
         <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 sm:gap-6 lg:gap-8">
-          {games.map((meta) => (
+          {visibleGames.map((meta) => (
             <GameCard key={meta.id} meta={meta} onClick={() => startGame(meta.id)} />
           ))}
         </div>

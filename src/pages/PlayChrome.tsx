@@ -1,8 +1,11 @@
+import { useEffect, useRef } from 'react';
 import { useParams, useOutletContext } from 'react-router-dom';
 import type { GameStats } from '../types';
 import type { Tone } from '../types/theme';
 import { StatCard } from '../components/ui/StatCard';
 import { Button } from '../components/ui/primitives/Button';
+import { getGameMeta } from '../games/gameRegistry';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { AppOutletContext } from '../App';
 
 const STAT_CARDS_CONFIG: { key: keyof GameStats; label: string; suffix?: string; tone: Tone }[] = [
@@ -12,30 +15,33 @@ const STAT_CARDS_CONFIG: { key: keyof GameStats; label: string; suffix?: string;
   { key: 'repetitions', label: 'Reps', tone: 'neutral' },
 ];
 
-const INSTRUCTIONS: Record<string, string> = {
-  'butterfly-rescue': 'Move your hands over butterflies to catch them. Avoid the brown moths!',
-  'fruit-harvest': 'Reach up high and down low to collect recipe fruits. Watch out for wrong fruits!',
-  'crystal-guardian': 'Raise both arms overhead to charge the crystal. Release to blast enemies!',
-  'fruit-slice': 'Swipe your arm through the fruit with a real reach — avoid slicing the bombs!',
-  'wall-painter': 'Reach a paint well to load color, then carry it to a canvas and hold to mix it toward the target shown above each one.',
-  'tilt-maze': 'Lean left or right to dodge walls — the ball rolls toward the flag on its own. Lean forward to speed up!',
-};
-
 /**
  * The stats + controls panel shown below the camera Stage during a session.
  * All live state lives in App's useGameSession (reached via the router Outlet
- * context); this component is presentational.
+ * context); this component is presentational. Its content sits behind the
+ * fullscreen Stage during actual play (see Stage.tsx) — the sr-only heading
+ * below exists so screen-reader/keyboard users still get an announcement of
+ * which session started, even though nothing here is visible during play.
  */
 export function PlayChrome() {
   const { gameId = '' } = useParams<{ gameId: string }>();
   const { session, backToDashboard } = useOutletContext<AppOutletContext>();
   const { stats, gameOver, endSession } = session;
+  const meta = getGameMeta(gameId);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useDocumentTitle(meta ? `RehabPlay — ${meta.title}` : 'RehabPlay — Session');
+  useEffect(() => { headingRef.current?.focus(); }, [gameId]);
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
+      <h1 ref={headingRef} tabIndex={-1} className="sr-only outline-none">
+        Playing {meta?.title ?? 'session'}
+      </h1>
+
       <div className="text-center bg-surface border border-border rounded-card p-3 sm:p-4">
         <p className="text-muted text-xs sm:text-sm font-medium">
-          💡 {INSTRUCTIONS[gameId] ?? 'Move your body to interact with the game. Follow the on-screen feedback for best results.'}
+          💡 {meta?.instructions ?? 'Move your body to interact with the game. Follow the on-screen feedback for best results.'}
         </p>
       </div>
 

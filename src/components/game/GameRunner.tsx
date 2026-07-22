@@ -16,6 +16,7 @@ import { HUD } from './HUD';
 import { ObjectiveBanner } from './ObjectiveBanner';
 import { Segmented } from '../ui/SettingsMenu';
 import { Button } from '../ui/primitives/Button';
+import { useTwoStepConfirm } from '../../hooks/useTwoStepConfirm';
 import type { GameSessionHandlers, GameEndPayload } from '../../hooks/useGameSession';
 
 interface GameRunnerProps extends GameSessionHandlers {
@@ -57,6 +58,7 @@ const NEUTRAL_OVERLAY_INPUT = (pose: PoseData | null, tracked: boolean): MotionO
 export function GameRunner(props: GameRunnerProps) {
   const { gameId, poseDataRef } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { armed: quitArmed, trigger: triggerQuit } = useTwoStepConfirm(props.onQuit);
 
   const registration = useMemo(() => getGameRegistration(gameId), [gameId]);
   const calibration = useMemo(() => new Calibration(gameId), [gameId]);
@@ -157,10 +159,16 @@ export function GameRunner(props: GameRunnerProps) {
     startPlaying();
   };
 
-  // Escape toggles pause during play, for keyboard-only players.
+  // Escape and Space both toggle pause during play — accelerators for
+  // keyboard-only / returning players (Shneiderman #2), documented in the
+  // in-session Help overlay (see Stage.tsx / HelpOverlay.tsx).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') togglePause();
+      else if (e.key === ' ' && phaseRef.current === 'playing') {
+        e.preventDefault();
+        togglePause();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -387,8 +395,8 @@ export function GameRunner(props: GameRunnerProps) {
             <Button variant="ghost" size="lg" onClick={restartMission}>
               🔁 Restart Mission
             </Button>
-            <Button variant="ghost" size="lg" onClick={props.onQuit}>
-              Quit to Dashboard
+            <Button variant={quitArmed ? 'danger' : 'ghost'} size="lg" onClick={triggerQuit}>
+              {quitArmed ? '⚠ Click again to quit' : 'Quit to Dashboard'}
             </Button>
           </div>
         </div>

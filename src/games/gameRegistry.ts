@@ -17,6 +17,7 @@ const GAME_META: Record<string, GameMeta> = {
     icon: '🦋',
     rehabFocus: 'Shoulder flexion, lateral reaching',
     tone: 'accent',
+    instructions: 'Move your hands over butterflies to catch them. Avoid the brown moths!',
   },
   'fruit-harvest': {
     id: 'fruit-harvest',
@@ -26,6 +27,7 @@ const GAME_META: Record<string, GameMeta> = {
     icon: '🍎',
     rehabFocus: 'Full ROM, shoulder flexion, lateral bending',
     tone: 'warning',
+    instructions: 'Reach up high and down low to collect recipe fruits. Watch out for wrong fruits!',
   },
   'crystal-guardian': {
     id: 'crystal-guardian',
@@ -35,6 +37,7 @@ const GAME_META: Record<string, GameMeta> = {
     icon: '💎',
     rehabFocus: 'Bilateral overhead press, shoulder stability',
     tone: 'success',
+    instructions: 'Raise both arms overhead to charge the crystal. Release to blast enemies!',
   },
   'cosmic-defender': {
     id: 'cosmic-defender',
@@ -44,6 +47,7 @@ const GAME_META: Record<string, GameMeta> = {
     icon: '🛰️',
     rehabFocus: 'Reach, lean, head mobility, shoulder circles',
     tone: 'neutral',
+    instructions: 'Reach to aim, punch to fire, lean to dodge, and turn your head to sweep the radar — the station throws a new challenge every wave.',
   },
   'fruit-slice': {
     id: 'fruit-slice',
@@ -53,6 +57,7 @@ const GAME_META: Record<string, GameMeta> = {
     icon: '🍉',
     rehabFocus: 'Lateral reach, swipe speed & shoulder mobility',
     tone: 'accent',
+    instructions: 'Swipe your arm through the fruit with a real reach — avoid slicing the bombs!',
   },
   'wall-painter': {
     id: 'wall-painter',
@@ -62,6 +67,7 @@ const GAME_META: Record<string, GameMeta> = {
     icon: '🎨',
     rehabFocus: 'Full-ROM reach, carry & bilateral coordination',
     tone: 'warning',
+    instructions: 'Reach a paint well to load color, then carry it to a canvas and hold to mix it toward the target shown above each one.',
   },
   'tilt-maze': {
     id: 'tilt-maze',
@@ -71,6 +77,7 @@ const GAME_META: Record<string, GameMeta> = {
     icon: '🧭',
     rehabFocus: 'Trunk control, weight-shifting & core stability',
     tone: 'success',
+    instructions: 'Lean left or right to dodge walls — the ball rolls toward the flag on its own. Lean forward to speed up!',
   },
 };
 

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useSettings } from '../../hooks/useSettings';
 import { StorageService } from '../../core/services/StorageService';
 import { Button } from '../ui/primitives/Button';
+import { Segmented, Switch } from '../ui/SettingsMenu';
+import { THEME_OPTIONS, TEXT_SIZE_OPTIONS } from '../ui/settingsOptions';
 
 interface OnboardingProps {
   onDone: () => void;
@@ -72,53 +74,15 @@ export function Onboarding({ onDone }: OnboardingProps) {
             <h2 className="text-xl sm:text-2xl font-extrabold text-[var(--color-text)] mb-1 text-center">Make it comfortable for you</h2>
             <p className="text-[var(--color-text-muted)] text-sm mb-6 text-center">You can change any of this later in Settings.</p>
 
-            <div className="space-y-4 max-w-sm mx-auto">
-              <div>
-                <span className="block text-sm font-semibold text-[var(--color-text)] mb-2">Theme</span>
-                <div className="flex gap-2">
-                  {(['dark', 'light'] as const).map(t => (
-                    <button
-                      key={t}
-                      onClick={() => set({ theme: t })}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold border cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
-                        s.theme === t ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white' : 'bg-[var(--color-surface-strong)] border-[var(--color-border)] text-[var(--color-text-muted)]'
-                      }`}
-                    >
-                      {t === 'dark' ? '🌙 Dark' : '☀️ Light'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <span className="block text-sm font-semibold text-[var(--color-text)] mb-2">Text Size</span>
-                <div className="flex gap-2">
-                  {(['sm', 'md', 'lg', 'xl'] as const).map(sz => (
-                    <button
-                      key={sz}
-                      onClick={() => set({ textSize: sz })}
-                      className={`flex-1 px-2 py-2 rounded-lg text-xs font-bold border cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
-                        s.textSize === sz ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white' : 'bg-[var(--color-surface-strong)] border-[var(--color-border)] text-[var(--color-text-muted)]'
-                      }`}
-                    >
-                      {sz.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                role="switch"
-                aria-checked={s.reducedMotion}
-                aria-label="Reduced Motion. Calm backgrounds and effects"
-                onClick={() => set({ reducedMotion: !s.reducedMotion })}
-                className="w-full flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-[var(--color-surface-strong)] border border-[var(--color-border)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
-              >
-                <span className="text-sm font-semibold text-[var(--color-text)]">Reduced Motion</span>
-                <span className={`relative w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${s.reducedMotion ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border-strong)]'}`}>
-                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${s.reducedMotion ? 'translate-x-5' : ''}`} />
-                </span>
-              </button>
+            <div className="space-y-1 max-w-sm mx-auto">
+              <Segmented label="Theme" options={THEME_OPTIONS} value={s.theme} onChange={v => set({ theme: v })} />
+              <Segmented label="Text Size" options={TEXT_SIZE_OPTIONS} value={s.textSize} onChange={v => set({ textSize: v })} />
+              <Switch
+                label="Reduced Motion"
+                description="Calm backgrounds and effects"
+                checked={s.reducedMotion}
+                onChange={v => set({ reducedMotion: v })}
+              />
             </div>
           </div>
         )}

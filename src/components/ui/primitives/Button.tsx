@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
-type Size = 'sm' | 'md' | 'lg';
+type Size = 'sm' | 'md' | 'lg' | 'icon';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -20,6 +20,7 @@ const SIZE_STYLES: Record<Size, string> = {
   sm: 'px-3.5 py-2 text-xs sm:text-sm rounded-full gap-1.5',
   md: 'px-6 py-3 text-sm sm:text-base rounded-2xl gap-2',
   lg: 'px-8 py-3.5 text-base sm:text-lg rounded-2xl gap-2.5',
+  icon: 'w-8 h-8 sm:w-9 sm:h-9 rounded-full text-sm',
 };
 
 export function Button({ variant = 'primary', size = 'md', className = '', children, ...rest }: ButtonProps) {

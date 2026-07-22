@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import App from './App';
 import { LandingPage } from './pages/LandingPage';
 import { PlayChrome } from './pages/PlayChrome';
+import { ProgressPage } from './pages/ProgressPage';
 
 /**
  * App is the persistent layout route: it owns the camera stream, MediaPipe
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <LandingPage /> },
       { path: 'play/:gameId', element: <PlayChrome /> },
+      { path: 'progress', element: <ProgressPage /> },
     ],
   },
 ]);

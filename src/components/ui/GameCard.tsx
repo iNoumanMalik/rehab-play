@@ -13,7 +13,7 @@ export function GameCard({ meta, onClick }: GameCardProps) {
       onClick={onClick}
       className="group relative bg-surface border border-border rounded-card shadow-1 text-left transition-all duration-[var(--dur-slow)] ease-[var(--ease-standard)] hover:-translate-y-1 hover:shadow-2 hover:border-border-strong cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus-ring)]/40 w-full p-6 sm:p-8"
     >
-      <div className="absolute top-5 right-5 sm:top-6 sm:right-6 text-4xl sm:text-5xl transform group-hover:scale-110 transition-transform duration-[var(--dur-slow)]">
+      <div aria-hidden="true" className="absolute top-5 right-5 sm:top-6 sm:right-6 text-4xl sm:text-5xl transform group-hover:scale-110 transition-transform duration-[var(--dur-slow)]">
         {meta.icon}
       </div>
       <div className="mb-3 sm:mb-4">
@@ -34,7 +34,7 @@ export function GameCard({ meta, onClick }: GameCardProps) {
         <span className="relative py-1 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-accent after:transition-all after:duration-[var(--dur-base)] group-hover:after:w-full">
           Start Session
         </span>
-        <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1.5 transition-transform duration-[var(--dur-base)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" className="w-4 h-4 ml-2 transform group-hover:translate-x-1.5 transition-transform duration-[var(--dur-base)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
         </svg>
       </div>

@@ -39,10 +39,15 @@ function App() {
 
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [replayToken, setReplayToken] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(() => !StorageService.get('onboarding_complete', false));
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const { poseDataRef, isReady, error } = usePoseEngine(videoRef);
+  const { poseDataRef, isReady, error: poseError } = usePoseEngine(videoRef);
+  // Camera failures (permission denied, no device, in use elsewhere) take
+  // priority over pose-model failures — without a camera nothing else matters,
+  // and the message is more specific/actionable than the generic pose error.
+  const error = cameraError ?? poseError;
   const sessionKey = currentGameId ? `${currentGameId}:${replayToken}` : null;
   const session = useGameSession(sessionKey, poseDataRef);
   const [settings] = useSettings();
@@ -158,9 +163,11 @@ function App() {
               error={error}
               showTrackingLoader={!currentGameId}
               fullscreen={Boolean(currentGameId)}
+              gameId={currentGameId as GameId | null}
               onExit={currentGameId ? quitToDashboard : undefined}
               onVideoReady={handleVideoReady}
               onVideoStopped={handleVideoStopped}
+              onCameraError={setCameraError}
             >
               {videoReady && isReady && <TrackingStatusBanner health={trackingHealth} />}
               {currentGameId && (

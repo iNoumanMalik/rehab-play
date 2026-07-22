@@ -14,6 +14,10 @@ export interface GameMeta {
   rehabFocus: string;
   /** A single restrained accent tone for this card's tag badge — cards share one calm chrome, not a rainbow of gradients. */
   tone: Tone;
+  /** Plain-language "how to play" — the single source of truth surfaced both
+   * on the pre-game stats panel (PlayChrome) and the in-session Help overlay,
+   * so a returning player can recall correct form without redoing onboarding. */
+  instructions: string;
 }
 
 export interface GameStats {
