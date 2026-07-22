@@ -27,7 +27,7 @@ function Switch({ label, description, checked, onChange, disabled }: {
   );
 }
 
-function Segmented<T extends string>({ label, options, value, onChange }: {
+export function Segmented<T extends string>({ label, options, value, onChange }: {
   label: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void;
 }) {
   return (
@@ -121,7 +121,7 @@ function ResetProgressConfirm({ onCancel, onConfirmed }: { onCancel: () => void;
         </button>
         <button
           onClick={onConfirmed}
-          className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-500/50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+          className="px-5 py-2.5 rounded-xl bg-danger hover:opacity-90 text-white font-bold text-sm border border-danger/50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-danger"
         >
           Yes, reset everything
         </button>
@@ -261,7 +261,7 @@ export function SettingsMenu() {
                   <SectionHeading>Data</SectionHeading>
                   <button
                     onClick={() => setConfirmingReset(true)}
-                    className="w-full text-left py-2.5 px-1 text-sm font-bold text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-rose-400 rounded-lg"
+                    className="w-full text-left py-2.5 px-1 text-sm font-bold text-danger hover:opacity-80 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-danger rounded-lg"
                   >
                     🗑 Reset My Progress…
                   </button>

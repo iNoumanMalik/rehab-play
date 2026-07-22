@@ -1,66 +1,106 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap');
 
 @import "tailwindcss";
 
 /* Ties Tailwind's dark: variant to our data-theme attribute (instead of the
    default prefers-color-scheme media query) so the same utility classes can
-   give brand-colored badges (e.g. text-violet-200 on a translucent chip) a
-   light-mode-safe counterpart without a bespoke class per badge. */
+   give brand-colored badges a light-mode-safe counterpart without a bespoke
+   class per badge. */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 @layer base {
   /*
    * Design tokens — semantic CSS custom properties, not Tailwind's @theme
    * registration, so dark/light/high-contrast can compose via plain cascade
-   * without fighting Tailwind's opacity-modifier color parsing. Components
-   * consume these via arbitrary-value classes, e.g. bg-[var(--color-bg)].
-   * Dark values below are intentionally identical to the app's original
-   * hardcoded colors, so introducing tokens is a zero-regression step; Light
-   * and High Contrast are real, separately-designed palettes, not inversions.
+   * without fighting Tailwind's opacity-modifier color parsing. A curated
+   * subset is re-exported below via `@theme inline` so components can also
+   * reach them as plain utilities (bg-surface, text-muted, bg-accent, …)
+   * without losing live theme-switching.
+   *
+   * Palette: warm clinical-premium — cream/terracotta/sage, not cold clinical
+   * blue. Dark is a genuine warm-dark companion (not an inversion of light).
    */
   :root {
-    --color-bg: #070B1A;
-    --color-bg-elevated: #0d1226;
-    --color-surface: rgba(255, 255, 255, 0.03);
-    --color-surface-strong: rgba(255, 255, 255, 0.06);
-    --color-surface-hover: rgba(255, 255, 255, 0.10);
-    --color-border: rgba(255, 255, 255, 0.10);
-    --color-border-strong: rgba(255, 255, 255, 0.18);
-    --color-text: #ffffff;
-    --color-text-muted: rgba(255, 255, 255, 0.68);
-    --color-text-faint: rgba(255, 255, 255, 0.5);
-    --color-accent: #8b5cf6;
-    --color-accent-strong: #7c3aed;
-    --color-accent-text: #ddd6fe;
-    --color-success: #34d399;
-    --color-warning: #fbbf24;
-    --color-danger: #f87171;
-    --color-focus-ring: #8b5cf6;
+    --color-bg: #221812;
+    --color-bg-elevated: #2b1f19;
+    --color-surface: rgba(255, 248, 240, 0.04);
+    --color-surface-strong: rgba(255, 248, 240, 0.07);
+    --color-surface-hover: rgba(255, 248, 240, 0.11);
+    --color-border: rgba(255, 248, 240, 0.10);
+    --color-border-strong: rgba(255, 248, 240, 0.18);
+    --color-text: #fff8f0;
+    --color-text-muted: rgba(255, 248, 240, 0.68);
+    --color-text-faint: rgba(255, 248, 240, 0.5);
+    --color-accent: #f0997d;
+    --color-accent-strong: #e8836b;
+    --color-accent-text: #ffd9c9;
+    --color-success: #7fbe9c;
+    --color-success-text: #a9e3c4;
+    --color-warning: #f0c169;
+    --color-warning-text: #f6d998;
+    --color-danger: #e5484d;
+    --color-focus-ring: #f0997d;
+
+    --radius-card: 20px;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.16), 0 1px 1px rgba(0, 0, 0, 0.10);
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.20), 0 2px 4px rgba(0, 0, 0, 0.12);
+    --shadow-3: 0 16px 40px rgba(0, 0, 0, 0.28), 0 4px 10px rgba(0, 0, 0, 0.16);
+
+    --dur-fast: 120ms;
+    --dur-base: 220ms;
+    --dur-slow: 380ms;
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /*
+     * "On-dark" tones — deliberately declared ONLY here in :root, never
+     * re-declared in the light-theme or high-contrast blocks below, so they
+     * stay constant across theme switches. Reserved for bare text/icons sitting
+     * directly on the fixed-black camera/pause/calibration scrims (Stage,
+     * GameRunner intro/pause, CalibrationOverlay, FeedbackOverlay, HUD) — those
+     * surfaces don't follow the Theme setting (see Stage.tsx), so text on them
+     * must not follow it either. The regular --color-accent-text etc. variants
+     * are tuned for contrast on theme-reactive surfaces and would go dark-on-
+     * dark in Light theme if used here instead.
+     */
+    --on-dark-accent: #f0997d;
+    --on-dark-success: #7fbe9c;
+    --on-dark-warning: #f0c169;
+    --on-dark-danger: #ff8a80;
+
     --font-scale: 1;
     --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
       'Helvetica Neue', Arial, sans-serif;
+    --font-display: 'Fraunces', 'Inter', ui-serif, Georgia, serif;
   }
 
-  /* Light theme — a real palette, not a naive inversion of dark. */
+  /* Light theme — the primary brand palette: cream canvas, terracotta accent,
+     sage secondary, warm dark-brown text. A real palette, not an inversion. */
   :root[data-theme='light'] {
-    --color-bg: #F4F5FB;
-    --color-bg-elevated: #FFFFFF;
-    --color-surface: rgba(15, 23, 42, 0.035);
-    --color-surface-strong: rgba(15, 23, 42, 0.07);
-    --color-surface-hover: rgba(15, 23, 42, 0.11);
-    --color-border: rgba(15, 23, 42, 0.12);
-    --color-border-strong: rgba(15, 23, 42, 0.22);
-    --color-text: #10162B;
-    --color-text-muted: rgba(16, 22, 43, 0.68);
-    --color-text-faint: rgba(16, 22, 43, 0.52);
-    --color-accent: #7c3aed;
-    --color-accent-strong: #6d28d9;
-    --color-accent-text: #5b21b6;
-    --color-success: #0d9268;
-    --color-warning: #b45309;
-    --color-danger: #dc2626;
-    --color-focus-ring: #6d28d9;
+    --color-bg: #fff8f0;
+    --color-bg-elevated: #ffffff;
+    --color-surface: rgba(74, 59, 54, 0.035);
+    --color-surface-strong: rgba(74, 59, 54, 0.07);
+    --color-surface-hover: rgba(74, 59, 54, 0.11);
+    --color-border: rgba(74, 59, 54, 0.12);
+    --color-border-strong: rgba(74, 59, 54, 0.22);
+    --color-text: #4a3b36;
+    --color-text-muted: rgba(74, 59, 54, 0.68);
+    --color-text-faint: rgba(74, 59, 54, 0.52);
+    --color-accent: #e8836b;
+    --color-accent-strong: #d46a50;
+    --color-accent-text: #8a3e2c;
+    --color-success: #6fa88a;
+    --color-success-text: #2f6b4c;
+    --color-warning: #f0c169;
+    --color-warning-text: #8a6410;
+    --color-danger: #c53a32;
+    --color-focus-ring: #d46a50;
+
+    --shadow-1: 0 1px 2px rgba(74, 59, 54, 0.06), 0 1px 1px rgba(74, 59, 54, 0.04);
+    --shadow-2: 0 4px 12px rgba(74, 59, 54, 0.08), 0 2px 4px rgba(74, 59, 54, 0.05);
+    --shadow-3: 0 16px 40px rgba(74, 59, 54, 0.14), 0 4px 10px rgba(74, 59, 54, 0.07);
   }
 
   /* High Contrast — composes on top of either theme: solid borders, no translucency, max text contrast. */
@@ -74,19 +114,19 @@
     --color-text-faint: var(--color-text);
   }
   :root[data-contrast='high'][data-theme='light'] {
-    --color-accent: #4c1d95;
-    --color-accent-strong: #3b0764;
-    --color-success: #065f46;
-    --color-warning: #7c2d12;
-    --color-danger: #7f1d1d;
+    --color-accent: #7a3320;
+    --color-accent-strong: #5c2617;
+    --color-success: #2f5c45;
+    --color-warning: #7a5710;
+    --color-danger: #7a241d;
   }
   :root[data-contrast='high']:not([data-theme='light']) {
     --color-bg: #000000;
     --color-bg-elevated: #000000;
-    --color-accent: #b794ff;
-    --color-success: #4ade80;
-    --color-warning: #fde047;
-    --color-danger: #ff8a80;
+    --color-accent: #ffb49b;
+    --color-success: #a3e0c2;
+    --color-warning: #fbe08d;
+    --color-danger: #ff9b94;
   }
 
   /* Text size — scales rem-based Tailwind text utilities app-wide via the root font size. */
@@ -97,6 +137,7 @@
 
   :root[data-dyslexia='true'] {
     --font-sans: 'Atkinson Hyperlegible', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: 'Atkinson Hyperlegible', 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   html {
@@ -110,7 +151,7 @@
     -moz-osx-font-smoothing: grayscale;
     background: var(--color-bg);
     color: var(--color-text);
-    transition: background-color 0.25s ease, color 0.25s ease;
+    transition: background-color var(--dur-slow) var(--ease-standard), color var(--dur-slow) var(--ease-standard);
   }
 
   /* Accessible focus indicators across the app */
@@ -182,6 +223,51 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/*
+ * Re-export a curated subset of the semantic tokens above as Tailwind theme
+ * keys via `@theme inline`. Because it's `inline`, Tailwind emits the utility
+ * CSS referencing `var(--color-surface)` etc. directly rather than baking a
+ * static value at build time — theme/contrast switching via the cascade still
+ * works exactly as before. This just gives components `bg-surface`,
+ * `text-muted`, `bg-accent`, `shadow-1`, `rounded-card`, `font-display`, etc.
+ * instead of `bg-[var(--color-surface)]`.
+ */
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-bg-elevated: var(--color-bg-elevated);
+  --color-surface: var(--color-surface);
+  --color-surface-strong: var(--color-surface-strong);
+  --color-surface-hover: var(--color-surface-hover);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-text: var(--color-text);
+  --color-muted: var(--color-text-muted);
+  --color-faint: var(--color-text-faint);
+  --color-accent: var(--color-accent);
+  --color-accent-strong: var(--color-accent-strong);
+  --color-accent-text: var(--color-accent-text);
+  --color-success: var(--color-success);
+  --color-success-text: var(--color-success-text);
+  --color-warning: var(--color-warning);
+  --color-warning-text: var(--color-warning-text);
+  --color-danger: var(--color-danger);
+  --color-focus-ring: var(--color-focus-ring);
+
+  --color-on-dark-accent: var(--on-dark-accent);
+  --color-on-dark-success: var(--on-dark-success);
+  --color-on-dark-warning: var(--on-dark-warning);
+  --color-on-dark-danger: var(--on-dark-danger);
+
+  --radius-card: var(--radius-card);
+
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
 }
 
 @layer utilities {

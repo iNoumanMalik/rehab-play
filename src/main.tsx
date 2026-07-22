@@ -1,7 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { RouterProvider } from 'react-router-dom'
 import './index.css'
-import App from './App.tsx'
+import { router } from './router.tsx'
 import { settingsStore } from './core/services/SettingsStore'
 
 // Stamp theme/accessibility attributes before the first paint so there's no
@@ -20,6 +21,6 @@ applyRootAttributes();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </StrictMode>,
 )

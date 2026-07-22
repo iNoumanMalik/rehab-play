@@ -21,7 +21,7 @@ export function CalibrationOverlay({ prompt, stepProgress, capturing, tracked }:
           <circle cx="60" cy="60" r={R} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="8" />
           <circle
             cx="60" cy="60" r={R} fill="none"
-            stroke={capturing ? '#34d399' : '#a78bfa'}
+            stroke={capturing ? '#7fbe9c' : '#f0997d'}
             strokeWidth="8" strokeLinecap="round"
             strokeDasharray={C}
             strokeDashoffset={C * (1 - stepProgress)}
@@ -34,10 +34,10 @@ export function CalibrationOverlay({ prompt, stepProgress, capturing, tracked }:
       </div>
 
       <div className="max-w-md">
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-violet-300/80 mb-2">Calibrating your range</p>
-        <p className="text-lg sm:text-xl font-bold text-[var(--color-text)] leading-snug">{prompt}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-on-dark-accent mb-2">Calibrating your range</p>
+        <p className="text-lg sm:text-xl font-bold text-white leading-snug">{prompt}</p>
         {!tracked && (
-          <p className="text-amber-300 text-sm mt-3 font-medium animate-pulse">
+          <p className="text-on-dark-warning text-sm mt-3 font-medium animate-pulse">
             Move so your head, shoulders and hands are all visible.
           </p>
         )}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSettings } from '../../hooks/useSettings';
 import { StorageService } from '../../core/services/StorageService';
+import { Button } from '../ui/primitives/Button';
 
 interface OnboardingProps {
   onDone: () => void;
@@ -149,19 +150,13 @@ export function Onboarding({ onDone }: OnboardingProps) {
 
         <div className="flex items-center justify-center gap-3 mt-6">
           {step > 0 && (
-            <button
-              onClick={back}
-              className="px-6 py-3 bg-[var(--color-surface-strong)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text)] font-bold rounded-2xl border border-[var(--color-border-strong)] cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-accent)]/40"
-            >
+            <Button variant="secondary" onClick={back}>
               Back
-            </button>
+            </Button>
           )}
-          <button
-            onClick={next}
-            className="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-extrabold rounded-2xl border border-violet-500/40 shadow-lg cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
-          >
+          <Button variant="primary" onClick={next}>
             {step < STEP_COUNT - 1 ? 'Next' : "Let's Go"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

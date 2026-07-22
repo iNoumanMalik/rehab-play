@@ -236,13 +236,13 @@ export class ButterflyScene extends Scene {
     ctx.globalAlpha = 1;
     this.particles.render(ctx);
 
-    Renderer.drawText(ctx, `Score: ${this.score}`, 16, 12, { size: 18, align: 'left' });
-    Renderer.drawText(ctx, `Level ${this.levelMgr.currentLevel}`, 16, this.height - 26, { size: 13, color: '#88ccff', align: 'left' });
+    // Kept below the DOM HUD strip AND the ObjectiveBanner (top ~12-98px);
+    // combo is shown by the shared ComboDisplay overlay, not duplicated here.
+    Renderer.drawHudBand(ctx, this.width, 96, 48);
+    Renderer.drawText(ctx, `Score: ${this.score}`, 16, 108, { size: 18, align: 'left' });
+    Renderer.drawText(ctx, `Level ${this.levelMgr.currentLevel}`, this.width - 16, 108, { size: 13, color: '#88ccff', align: 'right' });
     Renderer.drawProgressBar(ctx, this.width - 130, this.height - 26, 110, 6, this.flow, warn());
     Renderer.drawText(ctx, '✨ Flow', this.width - 130, this.height - 38, { size: 11, color: '#ccc', align: 'left' });
-    if (this.combo.combo >= 3) {
-      Renderer.drawText(ctx, `🔥 ${this.combo.combo}x`, this.width / 2, 12, { size: 17, align: 'center', color: '#FF6B6B' });
-    }
   }
 
   getState(): SceneState {

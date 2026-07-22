@@ -72,6 +72,21 @@ export class Renderer {
     ctx.fillRect(0, 0, w, h);
   }
 
+  /**
+   * A soft full-width backdrop band behind in-canvas HUD text (score, level,
+   * etc), fading out at both edges so it reads as a legible strip rather than
+   * a hard bar cutting across the camera feed underneath.
+   */
+  static drawHudBand(ctx: CanvasRenderingContext2D, w: number, y: number, h: number, alpha = 0.32): void {
+    const grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, `rgba(0,0,0,0)`);
+    grad.addColorStop(0.15, `rgba(0,0,0,${alpha})`);
+    grad.addColorStop(0.85, `rgba(0,0,0,${alpha})`);
+    grad.addColorStop(1, `rgba(0,0,0,0)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, y, w, h);
+  }
+
   static drawHandCursor(ctx: CanvasRenderingContext2D, x: number, y: number, r = 35): void {
     Renderer.drawGlow(ctx, x, y, r * 1.5, '#ffffff');
     ctx.beginPath();

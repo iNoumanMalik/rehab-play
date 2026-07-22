@@ -295,11 +295,11 @@ export class CrystalScene extends Scene {
       Renderer.drawText(ctx, '⚔️ TEMPLE DEFENDED', cx, cy - 90, { size: 30, align: 'center', baseline: 'middle', color: '#FFD740' });
       ctx.globalAlpha = 1;
     } else {
-      Renderer.drawText(ctx, `Score: ${this.score}`, 16, 14, { size: 20, align: 'left' });
-      Renderer.drawText(ctx, `Reps: ${this.reps}  ·  Wave ${this.levelMgr.currentLevel}`, 16, 42, { size: 13, color: '#aaa', align: 'left' });
-      if (this.combo.combo >= 3) {
-        Renderer.drawText(ctx, `🔥 ${this.combo.combo}x`, cx, 14, { size: 18, align: 'center', color: '#FF6B6B' });
-      }
+      // Kept below the DOM HUD strip AND the ObjectiveBanner (top ~12-98px);
+      // combo is shown by the shared ComboDisplay overlay, not duplicated here.
+      Renderer.drawHudBand(ctx, this.width, 96, 52);
+      Renderer.drawText(ctx, `Score: ${this.score}`, 16, 108, { size: 20, align: 'left' });
+      Renderer.drawText(ctx, `Reps: ${this.reps}  ·  Wave ${this.levelMgr.currentLevel}`, 16, 132, { size: 13, color: '#aaa', align: 'left' });
     }
     ctx.restore();
   }

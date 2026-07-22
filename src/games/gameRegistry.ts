@@ -4,6 +4,9 @@ import { butterflyGame } from './butterfly-rescue/butterflyGame';
 import { fruitGame } from './fruit-harvest/fruitGame';
 import { crystalGame } from './crystal-guardian/crystalGame';
 import { cosmicGame } from './cosmic-defender/cosmicGame';
+import { fruitSliceGame } from './fruit-slice/fruitSliceGame';
+import { wallPainterGame } from './wall-painter/wallPainterGame';
+import { tiltMazeGame } from './tilt-maze/tiltMazeGame';
 
 const GAME_META: Record<string, GameMeta> = {
   'butterfly-rescue': {
@@ -13,10 +16,7 @@ const GAME_META: Record<string, GameMeta> = {
     tag: 'Hand-Eye Coordination',
     icon: '🦋',
     rehabFocus: 'Shoulder flexion, lateral reaching',
-    gradient: 'from-pink-600/30 via-rose-600/15 to-purple-600/30',
-    border: 'border-pink-500/40 hover:border-pink-400/80',
-    tagColor: 'text-pink-700 dark:text-pink-200 bg-pink-500/25',
-    hoverGlow: 'shadow-pink-500/30',
+    tone: 'accent',
   },
   'fruit-harvest': {
     id: 'fruit-harvest',
@@ -25,10 +25,7 @@ const GAME_META: Record<string, GameMeta> = {
     tag: 'Range of Motion',
     icon: '🍎',
     rehabFocus: 'Full ROM, shoulder flexion, lateral bending',
-    gradient: 'from-orange-600/30 via-amber-600/15 to-red-600/30',
-    border: 'border-orange-500/40 hover:border-orange-400/80',
-    tagColor: 'text-orange-700 dark:text-orange-200 bg-orange-500/25',
-    hoverGlow: 'shadow-orange-500/30',
+    tone: 'warning',
   },
   'crystal-guardian': {
     id: 'crystal-guardian',
@@ -37,10 +34,7 @@ const GAME_META: Record<string, GameMeta> = {
     tag: 'Strength Training',
     icon: '💎',
     rehabFocus: 'Bilateral overhead press, shoulder stability',
-    gradient: 'from-blue-600/30 via-cyan-600/15 to-teal-600/30',
-    border: 'border-blue-500/40 hover:border-blue-400/80',
-    tagColor: 'text-cyan-700 dark:text-cyan-200 bg-cyan-500/25',
-    hoverGlow: 'shadow-blue-500/30',
+    tone: 'success',
   },
   'cosmic-defender': {
     id: 'cosmic-defender',
@@ -49,10 +43,34 @@ const GAME_META: Record<string, GameMeta> = {
     tag: 'Reaction & Coordination',
     icon: '🛰️',
     rehabFocus: 'Reach, lean, head mobility, shoulder circles',
-    gradient: 'from-indigo-600/30 via-violet-600/15 to-fuchsia-600/30',
-    border: 'border-indigo-500/40 hover:border-indigo-400/80',
-    tagColor: 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/25',
-    hoverGlow: 'shadow-indigo-500/30',
+    tone: 'neutral',
+  },
+  'fruit-slice': {
+    id: 'fruit-slice',
+    title: 'Fruit Slice',
+    description: 'Swipe your arms across the frame to slice falling fruit, Fruit-Ninja style — dodge the bombs.',
+    tag: 'Swipe Coordination',
+    icon: '🍉',
+    rehabFocus: 'Lateral reach, swipe speed & shoulder mobility',
+    tone: 'accent',
+  },
+  'wall-painter': {
+    id: 'wall-painter',
+    title: 'Wall Painter',
+    description: 'Carry pigment from paint wells to canvases and mix each one to its target color — a reach-driven color-balancing puzzle.',
+    tag: 'Range of Motion',
+    icon: '🎨',
+    rehabFocus: 'Full-ROM reach, carry & bilateral coordination',
+    tone: 'warning',
+  },
+  'tilt-maze': {
+    id: 'tilt-maze',
+    title: 'Tilt Maze',
+    description: 'Lean left and right to steer a ball through a labyrinth; lean forward to push through faster. Calibrates to your own comfortable lean — seated or standing.',
+    tag: 'Core & Balance',
+    icon: '🧭',
+    rehabFocus: 'Trunk control, weight-shifting & core stability',
+    tone: 'success',
   },
 };
 
@@ -61,6 +79,9 @@ const REGISTRATIONS: Record<string, GameRegistration> = {
   'fruit-harvest': fruitGame,
   'crystal-guardian': crystalGame,
   'cosmic-defender': cosmicGame,
+  'fruit-slice': fruitSliceGame,
+  'wall-painter': wallPainterGame,
+  'tilt-maze': tiltMazeGame,
 };
 
 export function getGameMeta(id: string): GameMeta | undefined {

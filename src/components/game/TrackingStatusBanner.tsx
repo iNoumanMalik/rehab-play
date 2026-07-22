@@ -25,10 +25,10 @@ export function TrackingStatusBanner({ health }: TrackingStatusBannerProps) {
       <div
         role="status"
         aria-live="polite"
-        className="pointer-events-none flex items-center gap-2 px-4 py-2 rounded-full bg-black/70 border border-amber-400/40 backdrop-blur-md shadow-lg max-w-[92%]"
+        className="pointer-events-none flex items-center gap-2 px-4 py-2 rounded-full bg-black/70 border border-on-dark-warning/40 backdrop-blur-md shadow-1 max-w-[92%]"
       >
         <span aria-hidden="true">{active.icon}</span>
-        <p className="text-amber-100 text-xs sm:text-sm font-semibold text-center">{active.text}</p>
+        <p className="text-on-dark-warning text-xs sm:text-sm font-semibold text-center">{active.text}</p>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { Outlet, useLocation, useNavigate, matchPath } from 'react-router-dom';
 import { usePoseEngine } from './hooks/usePoseEngine';
 import { useGameSession } from './hooks/useGameSession';
 import { useTrackingHealth } from './hooks/useTrackingHealth';
@@ -11,9 +12,8 @@ import { TrackingStatusBanner } from './components/game/TrackingStatusBanner';
 import { ToastStack } from './components/ui/ToastStack';
 import { CaptionBar } from './components/ui/CaptionBar';
 import { Onboarding } from './components/onboarding/Onboarding';
-import { Dashboard } from './pages/Dashboard';
-import { GameSession } from './pages/GameSession';
 import { GameRunner } from './components/game/GameRunner';
+import { Button } from './components/ui/primitives/Button';
 import { getAllGameMeta } from './games/gameRegistry';
 import { audioManager } from './core/services/AudioManager';
 import { assets } from './core/assets/AssetSystem';
@@ -22,15 +22,28 @@ import { StorageService } from './core/services/StorageService';
 import { useSettings } from './hooks/useSettings';
 import type { GameId } from './types';
 
+/** Shared with the route pages (LandingPage/PlayChrome) rendered inside <Outlet/>. */
+export interface AppOutletContext {
+  games: ReturnType<typeof getAllGameMeta>;
+  session: ReturnType<typeof useGameSession>;
+  startGame: (gameId: string) => void;
+  backToDashboard: () => void;
+  playAgain: () => void;
+}
+
 function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const playMatch = matchPath('/play/:gameId', location.pathname);
+  const currentGameId = playMatch?.params.gameId ?? null;
+
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
-  const [currentGame, setCurrentGame] = useState<string | null>(null);
   const [replayToken, setReplayToken] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(() => !StorageService.get('onboarding_complete', false));
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { poseDataRef, isReady, error } = usePoseEngine(videoRef);
-  const sessionKey = currentGame ? `${currentGame}:${replayToken}` : null;
+  const sessionKey = currentGameId ? `${currentGameId}:${replayToken}` : null;
   const session = useGameSession(sessionKey, poseDataRef);
   const [settings] = useSettings();
   const trackingHealth = useTrackingHealth(videoRef, poseDataRef, isCameraOn && videoReady && isReady);
@@ -65,9 +78,9 @@ function App() {
 
   // Ambient music plays only during a game and only when enabled.
   useEffect(() => {
-    if (currentGame && settings.musicOn) audioManager.startMusic();
+    if (currentGameId && settings.musicOn) audioManager.startMusic();
     else audioManager.stopMusic();
-  }, [currentGame, settings.musicOn]);
+  }, [currentGameId, settings.musicOn]);
 
   const handleVideoReady = useCallback((video: HTMLVideoElement) => {
     videoRef.current = video;
@@ -83,15 +96,15 @@ function App() {
     setIsCameraOn(prev => {
       const next = !prev;
       if (!next) {
-        setCurrentGame(null);
+        navigate('/');
         setVideoReady(false);
       }
       return next;
     });
   };
 
-  const startGame = (gameId: string) => setCurrentGame(gameId);
-  const backToDashboard = () => setCurrentGame(null);
+  const startGame = (gameId: string) => navigate(`/play/${gameId}`);
+  const backToDashboard = () => navigate('/');
   const playAgain = () => setReplayToken(t => t + 1);
   const quitToDashboard = () => {
     session.endSession();
@@ -99,17 +112,16 @@ function App() {
   };
 
   const games = getAllGameMeta();
+  const outletContext: AppOutletContext = { games, session, startGame, backToDashboard, playAgain };
 
   return (
-    <div className="relative min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] overflow-x-hidden">
+    <div className="relative min-h-screen bg-bg text-text overflow-x-hidden">
       {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
       <ToastStack />
       <CaptionBar />
-      {/* Animated Background */}
+      {/* Calm, near-flat background — a single soft accent wash, not a multi-color animated blob field. */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className={`absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-violet-600/15 via-transparent to-cyan-600/15 rounded-full blur-[140px] ${settings.reducedMotion ? '' : 'animate-[pulse_10s_ease-in-out_infinite]'}`} />
-        <div className={`absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-pink-600/15 via-transparent to-amber-600/15 rounded-full blur-[140px] ${settings.reducedMotion ? '' : 'animate-[pulse_12s_ease-in-out_infinite_2s]'}`} />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+        <div className={`absolute -top-1/3 -right-1/4 w-2/3 h-2/3 bg-accent/5 rounded-full blur-[160px] ${settings.reducedMotion ? '' : 'animate-[pulse_14s_ease-in-out_infinite]'}`} />
       </div>
 
       <Header
@@ -119,25 +131,22 @@ function App() {
         onToggleCamera={toggleCamera}
       />
 
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
         {!isCameraOn ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-8 sm:p-12 shadow-2xl backdrop-blur-md text-center max-w-3xl mx-auto">
-            <div className="w-24 h-24 bg-rose-500/10 border border-rose-500/30 rounded-full flex items-center justify-center text-rose-400 text-4xl shadow-inner">
+          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 bg-surface border border-border rounded-card p-8 sm:p-12 shadow-2 text-center max-w-3xl mx-auto">
+            <div className="w-24 h-24 bg-danger/10 border border-danger/30 rounded-full flex items-center justify-center text-danger text-4xl">
               🚫
             </div>
             <div className="max-w-lg">
-              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 bg-gradient-to-r from-[var(--color-text)] to-[var(--color-text)]/80 bg-clip-text text-transparent">
+              <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 text-text font-display">
                 Camera is Disabled
               </h2>
-              <p className="text-[var(--color-text-muted)] text-sm sm:text-base leading-relaxed mb-6 font-medium">
+              <p className="text-muted text-sm sm:text-base leading-relaxed mb-6 font-medium">
                 RehabPlay requires a live webcam feed to track and translate your body movements into in-game gestures.
               </p>
-              <button
-                onClick={toggleCamera}
-                className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-[var(--color-text)] font-extrabold rounded-2xl border border-violet-500/40 shadow-lg hover:shadow-violet-500/25 transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
-              >
+              <Button variant="primary" size="lg" onClick={toggleCamera}>
                 📹 Enable Camera
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -147,16 +156,18 @@ function App() {
               videoReady={videoReady}
               isReady={isReady}
               error={error}
-              showTrackingLoader={!currentGame}
+              showTrackingLoader={!currentGameId}
+              fullscreen={Boolean(currentGameId)}
+              onExit={currentGameId ? quitToDashboard : undefined}
               onVideoReady={handleVideoReady}
               onVideoStopped={handleVideoStopped}
             >
               {videoReady && isReady && <TrackingStatusBanner health={trackingHealth} />}
-              {currentGame && (
+              {currentGameId && (
                 <>
                   <GameRunner
                     key={sessionKey}
-                    gameId={currentGame as GameId}
+                    gameId={currentGameId as GameId}
                     poseDataRef={poseDataRef}
                     onQuit={quitToDashboard}
                     {...session.handlers}
@@ -169,8 +180,8 @@ function App() {
                   )}
                   {session.gameOver && (
                     <VictoryScreen
-                      gameId={currentGame as GameId}
-                      won={session.won}
+                      gameId={currentGameId as GameId}
+                      outcome={session.outcome}
                       stats={session.stats}
                       reward={session.reward}
                       achievements={session.achievementsEarned}
@@ -182,17 +193,7 @@ function App() {
               )}
             </Stage>
 
-            {currentGame ? (
-              <GameSession
-                gameId={currentGame as GameId}
-                stats={session.stats}
-                gameOver={session.gameOver}
-                onEndSession={session.endSession}
-                onBack={backToDashboard}
-              />
-            ) : (
-              <Dashboard games={games} onStartGame={startGame} />
-            )}
+            <Outlet context={outletContext} />
           </>
         )}
       </main>

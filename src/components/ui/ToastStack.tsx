@@ -1,11 +1,20 @@
 import { useToasts } from '../../hooks/useToasts';
 import { toastStore, type ToastKind } from '../../core/services/ToastStore';
+import type { Tone } from '../../types/theme';
 
-const STYLES: Record<ToastKind, string> = {
-  achievement: 'from-amber-500/25 to-orange-500/15 border-amber-500/40',
-  levelup: 'from-violet-500/25 to-purple-500/15 border-violet-500/40',
-  streak: 'from-orange-500/25 to-red-500/15 border-orange-500/40',
-  goal: 'from-emerald-500/25 to-green-500/15 border-emerald-500/40',
+const TONES: Record<ToastKind, Tone> = {
+  achievement: 'accent',
+  levelup: 'success',
+  streak: 'warning',
+  goal: 'neutral',
+};
+
+const TONE_BG: Record<Tone, string> = {
+  accent: 'bg-accent/15 border-accent/40',
+  success: 'bg-success/15 border-success/40',
+  warning: 'bg-warning/15 border-warning/40',
+  danger: 'bg-danger/15 border-danger/40',
+  neutral: 'bg-surface-strong border-border-strong',
 };
 
 /** Mounted once near the app root; celebrates achievements/level-ups/streaks/daily goals. */
@@ -22,17 +31,17 @@ export function ToastStack() {
       {toasts.map(t => (
         <div
           key={t.id}
-          className={`pointer-events-auto flex items-start gap-3 bg-gradient-to-br ${STYLES[t.kind]} backdrop-blur-xl border rounded-2xl shadow-2xl p-3.5 animate-[toastIn_0.35s_ease-out]`}
+          className={`pointer-events-auto flex items-start gap-3 backdrop-blur-xl border rounded-card shadow-2 p-3.5 animate-[toastIn_0.35s_ease-out] ${TONE_BG[TONES[t.kind]]}`}
         >
           <span className="text-2xl flex-shrink-0 leading-none mt-0.5">{t.icon}</span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-extrabold text-[var(--color-text)] truncate">{t.title}</p>
-            {t.description && <p className="text-xs text-[var(--color-text-muted)] mt-0.5 leading-snug">{t.description}</p>}
+            <p className="text-sm font-extrabold text-text truncate">{t.title}</p>
+            {t.description && <p className="text-xs text-muted mt-0.5 leading-snug">{t.description}</p>}
           </div>
           <button
             onClick={() => toastStore.dismiss(t.id)}
             aria-label="Dismiss"
-            className="text-[var(--color-text-faint)] hover:text-[var(--color-text)] text-lg leading-none cursor-pointer flex-shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
+            className="text-faint hover:text-text text-lg leading-none cursor-pointer flex-shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] rounded"
           >
             ×
           </button>

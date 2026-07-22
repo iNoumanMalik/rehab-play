@@ -13,6 +13,8 @@ export interface GameEndPayload {
   accuracy: number;
   feedback: string[];
   won: boolean;
+  /** Only meaningful when `won` is false — how a non-victory session ended, so the recap screen can tell an actual loss apart from just running out of time or quitting early. */
+  outcome: 'lost' | 'timeup' | 'quit';
   successfulActions: number;
   repetitions: number;
 }
@@ -60,6 +62,7 @@ export function useGameSession(sessionKey: string | null, poseDataRef: React.Ref
   const [multiplier, setMultiplier] = useState(1);
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
+  const [outcome, setOutcome] = useState<'won' | 'lost' | 'timeup' | 'quit'>('won');
   const [reward, setReward] = useState<SessionRewardResult | null>(null);
   const [achievementsEarned, setAchievementsEarned] = useState<Achievement[]>([]);
 
@@ -75,6 +78,7 @@ export function useGameSession(sessionKey: string | null, poseDataRef: React.Ref
     setMultiplier(1);
     setGameOver(false);
     setWon(false);
+    setOutcome('won');
     setReward(null);
     setAchievementsEarned([]);
   }
@@ -82,6 +86,7 @@ export function useGameSession(sessionKey: string | null, poseDataRef: React.Ref
   const finalize = useCallback((data: GameEndPayload) => {
     setGameOver(true);
     setWon(data.won);
+    setOutcome(data.won ? 'won' : data.outcome);
     setStats(prev => ({
       ...prev,
       score: data.score, level: data.level, maxCombo: data.maxCombo, accuracy: data.accuracy,
@@ -132,10 +137,10 @@ export function useGameSession(sessionKey: string | null, poseDataRef: React.Ref
     const report = analyticsService.endSession(stats.score, stats.level, stats.maxCombo, stats.accuracy, feedback);
     finalize({
       score: report.score, level: report.level, maxCombo: report.maxCombo, accuracy: report.accuracy,
-      feedback: report.feedback, won: false,
+      feedback: report.feedback, won: false, outcome: 'quit',
       successfulActions: stats.successfulActions, repetitions: stats.repetitions,
     });
   }, [sessionKey, gameOver, stats, feedback, finalize]);
 
-  return { stats, feedback, combo, multiplier, gameOver, won, reward, achievementsEarned, handlers, endSession };
+  return { stats, feedback, combo, multiplier, gameOver, won, outcome, reward, achievementsEarned, handlers, endSession };
 }

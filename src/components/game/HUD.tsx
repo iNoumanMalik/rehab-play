@@ -2,6 +2,8 @@ import { safe, danger } from '../../core/engine/palette';
 
 interface HUDProps {
   elapsedSec: number;
+  /** When set, the timer counts down from this and the session auto-ends at 0. */
+  durationSec: number | null;
   health: { current: number; max: number } | null;
   paused: boolean;
   onTogglePause: () => void;
@@ -14,21 +16,23 @@ function formatTime(sec: number): string {
 }
 
 /** Top HUD strip overlaid on the game canvas: pause control, session timer, and (if the game has one) a health bar. */
-export function HUD({ elapsedSec, health, paused, onTogglePause }: HUDProps) {
+export function HUD({ elapsedSec, durationSec, health, paused, onTogglePause }: HUDProps) {
   const healthPct = health ? Math.max(0, Math.min(1, health.current / health.max)) : 0;
+  const remainingSec = durationSec != null ? Math.max(0, durationSec - elapsedSec) : null;
+  const lowTime = remainingSec != null && remainingSec <= 10;
 
   return (
     <div className="absolute top-3 sm:top-4 inset-x-3 sm:inset-x-4 z-20 flex items-center justify-between gap-3 pointer-events-none">
       <button
         onClick={onTogglePause}
         aria-label={paused ? 'Resume' : 'Pause'}
-        className="pointer-events-auto flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-[var(--color-text)] text-base backdrop-blur-md transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+        className="pointer-events-auto flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-white text-base backdrop-blur-md transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       >
         {paused ? '▶' : '⏸'}
       </button>
 
-      <div className="pointer-events-none flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border border-white/20 backdrop-blur-md text-[var(--color-text)] text-xs sm:text-sm font-bold tabular-nums">
-        ⏱ {formatTime(elapsedSec)}
+      <div className={`pointer-events-none flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border backdrop-blur-md text-xs sm:text-sm font-bold tabular-nums ${lowTime ? 'border-on-dark-danger/60 text-on-dark-danger' : 'border-white/20 text-white'}`}>
+        ⏱ {formatTime(remainingSec ?? elapsedSec)}
       </div>
 
       {health ? (

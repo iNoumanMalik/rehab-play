@@ -236,7 +236,7 @@ export class FruitScene extends Scene {
 
   private renderMetronome(ctx: CanvasRenderingContext2D): void {
     const cx = this.width / 2;
-    const cy = 70;
+    const cy = 118; // below the DOM HUD strip + ObjectiveBanner (top ~12-98px)
     const beatDist = this.beatDistance();
     const pulse = Math.max(0, 1 - beatDist * 4); // spikes right on the beat
     ctx.save();
@@ -297,11 +297,13 @@ export class FruitScene extends Scene {
       ctx.globalAlpha = 1;
     }
 
+    // Kept below the DOM HUD strip AND the ObjectiveBanner (top ~12-98px,
+    // which already announces the recipe name, so it isn't repeated here).
+    Renderer.drawHudBand(ctx, this.width, 96, 64);
+    Renderer.drawText(ctx, `Score: ${this.score}`, 16, 108, { size: 18, align: 'left' });
+    Renderer.drawText(ctx, `Level ${this.levelMgr.currentLevel}`, this.width - 16, 108, { size: 13, align: 'right', color: '#88ccff' });
     this.renderMetronome(ctx);
-    Renderer.drawText(ctx, `Recipe: ${recipe.name}`, this.width / 2, 100, { size: 17, align: 'center', color: warn() });
-    Renderer.drawText(ctx, `${'●'.repeat(this.collectedInRecipe)}${'○'.repeat(Math.max(0, recipe.fruits.length - this.collectedInRecipe))}`, this.width / 2, 124, { size: 15, align: 'center', color: '#aaa' });
-    Renderer.drawText(ctx, `Score: ${this.score}`, 16, 12, { size: 18, align: 'left' });
-    Renderer.drawText(ctx, `Level ${this.levelMgr.currentLevel}`, this.width - 16, 12, { size: 13, align: 'right', color: '#88ccff' });
+    Renderer.drawText(ctx, `${'●'.repeat(this.collectedInRecipe)}${'○'.repeat(Math.max(0, recipe.fruits.length - this.collectedInRecipe))}`, this.width / 2, 140, { size: 15, align: 'center', color: '#aaa' });
   }
 
   getState(): SceneState {

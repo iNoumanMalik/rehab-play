@@ -14,6 +14,8 @@ import { getGameRegistration } from '../../games/gameRegistry';
 import { CalibrationOverlay } from './CalibrationOverlay';
 import { HUD } from './HUD';
 import { ObjectiveBanner } from './ObjectiveBanner';
+import { Segmented } from '../ui/SettingsMenu';
+import { Button } from '../ui/primitives/Button';
 import type { GameSessionHandlers, GameEndPayload } from '../../hooks/useGameSession';
 
 interface GameRunnerProps extends GameSessionHandlers {
@@ -23,6 +25,18 @@ interface GameRunnerProps extends GameSessionHandlers {
 }
 
 type Phase = 'intro' | 'calibrating' | 'playing';
+
+/** 'unlimited' maps to `null` (no auto-end). Picked fresh per session on the intro screen. */
+type DurationChoice = '30' | '60' | '180' | 'unlimited';
+const DURATION_OPTIONS: { value: DurationChoice; label: string }[] = [
+  { value: '30', label: '30s' },
+  { value: '60', label: '1 min' },
+  { value: '180', label: '3 min' },
+  { value: 'unlimited', label: 'Unlimited' },
+];
+function durationSecFor(choice: DurationChoice): number | null {
+  return choice === 'unlimited' ? null : Number(choice);
+}
 
 const EMPTY_STATE: SceneState = {
   score: 0, success: 0, reps: 0, combo: 0, multiplier: 1, maxCombo: 0,
@@ -56,7 +70,8 @@ export function GameRunner(props: GameRunnerProps) {
   const [paused, setPaused] = useState(false);
   const [autoPaused, setAutoPaused] = useState(false);
   const [over, setOver] = useState(false);
-  const [hud, setHud] = useState<{ elapsedSec: number; health: SceneState['health'] | null }>({ elapsedSec: 0, health: null });
+  const [durationChoice, setDurationChoice] = useState<DurationChoice>('unlimited');
+  const [hud, setHud] = useState<{ elapsedSec: number; durationSec: number | null; health: SceneState['health'] | null }>({ elapsedSec: 0, durationSec: null, health: null });
   const [objective, setObjective] = useState('');
 
   // Mutable loop state (read inside the stable rAF closures).
@@ -77,6 +92,7 @@ export function GameRunner(props: GameRunnerProps) {
   const endedRef = useRef(false);
   const sceneSizeRef = useRef({ w: 0, h: 0 });
   const untrackedPlayMsRef = useRef(0);
+  const sessionDurationRef = useRef<number | null>(null);
 
   const AUTO_PAUSE_MS = 2000;
 
@@ -94,11 +110,13 @@ export function GameRunner(props: GameRunnerProps) {
     elapsedRef.current = 0;
     endedRef.current = false;
     untrackedPlayMsRef.current = 0;
+    const durationSec = durationSecFor(durationChoice);
+    sessionDurationRef.current = durationSec;
     setOver(false);
     setPaused(false);
     setAutoPaused(false);
     setObjective('');
-    setHud({ elapsedSec: 0, health: null });
+    setHud({ elapsedSec: 0, durationSec, health: null });
     analyticsService.startSession(gameId);
     phaseRef.current = 'playing';
     setPhase('playing');
@@ -186,6 +204,11 @@ export function GameRunner(props: GameRunnerProps) {
         return;
       }
 
+      // Session already ended (naturally, by the timer, or by quitting) —
+      // stop driving the scene forward so it freezes on its last frame
+      // instead of continuing to simulate behind the end-of-session UI.
+      if (endedRef.current) return;
+
       // Lost tracking during play — auto-pause after a sustained loss instead
       // of silently eating inputs while the player can't see what's wrong.
       if (!tracked) {
@@ -218,7 +241,12 @@ export function GameRunner(props: GameRunnerProps) {
       }
 
       const s = scene.getState();
-      emitState(s, frame);
+      const durationSec = sessionDurationRef.current;
+      const timeUp = durationSec != null && elapsedRef.current >= durationSec;
+      // A timer end isn't a scene-driven win/loss, so it's synthesized here
+      // rather than in any individual Scene — reuses the exact same
+      // end-of-session path (`s.over`) every game already implements.
+      emitState(timeUp && !s.over ? { ...s, over: true } : s, frame, timeUp ? 'timeup' : undefined);
 
       const overlayInput: MotionOverlayInput = {
         pose, tracked: frame.tracked, quality: frame.quality,
@@ -238,7 +266,7 @@ export function GameRunner(props: GameRunnerProps) {
 
       hudTickRef.current++;
       if (hudTickRef.current % 12 === 0) {
-        setHud({ elapsedSec: Math.floor(elapsedRef.current), health: s.health ?? null });
+        setHud({ elapsedSec: Math.floor(elapsedRef.current), durationSec: sessionDurationRef.current, health: s.health ?? null });
       }
     };
 
@@ -252,7 +280,7 @@ export function GameRunner(props: GameRunnerProps) {
       if (input) overlayRef.current.render(ctx, input, canvas.width, canvas.height);
     };
 
-    const emitState = (s: SceneState, frame: ExerciseFrame) => {
+    const emitState = (s: SceneState, frame: ExerciseFrame, endOutcome?: 'timeup') => {
       const prev = lastStateRef.current;
       if (s.score !== prev.score) props.onScoreUpdate(s.score);
       if (s.success !== prev.success) props.onSuccessUpdate(s.success);
@@ -272,7 +300,8 @@ export function GameRunner(props: GameRunnerProps) {
         const report = analyticsService.endSession(s.score, s.level, s.maxCombo, s.accuracy, feedback);
         const payload: GameEndPayload = {
           score: s.score, level: s.level, maxCombo: s.maxCombo, accuracy: s.accuracy,
-          feedback: report.feedback, won: s.won, successfulActions: s.success, repetitions: s.reps,
+          feedback: report.feedback, won: s.won, outcome: endOutcome ?? 'lost',
+          successfulActions: s.success, repetitions: s.reps,
         };
         props.onGameEnd(payload);
       }
@@ -293,7 +322,7 @@ export function GameRunner(props: GameRunnerProps) {
 
       {phase === 'playing' && !over && (
         <>
-          <HUD elapsedSec={hud.elapsedSec} health={hud.health ?? null} paused={paused} onTogglePause={togglePause} />
+          <HUD elapsedSec={hud.elapsedSec} durationSec={hud.durationSec} health={hud.health ?? null} paused={paused} onTogglePause={togglePause} />
           <ObjectiveBanner text={objective} />
         </>
       )}
@@ -301,26 +330,28 @@ export function GameRunner(props: GameRunnerProps) {
       {phase === 'intro' && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/60 backdrop-blur-sm text-center px-6">
           <div className="max-w-md">
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text)] mb-2">{registration.exercise.name}</h3>
-            <p className="text-violet-200/90 text-sm font-semibold mb-1">🎯 {registration.exercise.rehabFocus}</p>
-            <p className="text-[var(--color-text-muted)] text-sm leading-relaxed">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-2 font-display">{registration.exercise.name}</h3>
+            <p className="text-on-dark-accent text-sm font-semibold mb-1">🎯 {registration.exercise.rehabFocus}</p>
+            <p className="text-white/70 text-sm leading-relaxed">
               We'll quickly measure your range of motion so the game adapts to you — only clean, correct movements will score.
             </p>
           </div>
+
+          <Segmented
+            label="Session Length"
+            options={DURATION_OPTIONS}
+            value={durationChoice}
+            onChange={setDurationChoice}
+          />
+
           <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={beginCalibration}
-              className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-[var(--color-text)] font-extrabold rounded-2xl border border-violet-500/40 shadow-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
-            >
+            <Button variant="primary" size="lg" onClick={beginCalibration}>
               {savedFresh ? '📏 Recalibrate' : '📏 Calibrate & Start'}
-            </button>
+            </Button>
             {savedFresh && (
-              <button
-                onClick={useSavedCalibration}
-                className="px-8 py-4 bg-[var(--color-surface-strong)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text)] font-bold rounded-2xl border border-[var(--color-border-strong)] transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-white/30"
-              >
+              <Button variant="ghost" size="lg" onClick={useSavedCalibration}>
                 ▶ Use my saved range
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -339,31 +370,22 @@ export function GameRunner(props: GameRunnerProps) {
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-black/70 backdrop-blur-md text-center px-6" role="status" aria-live="polite">
           {autoPaused ? (
             <>
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text)]">🧍 We lost sight of you</h3>
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-white font-display">🧍 We lost sight of you</h3>
               <p className="text-white/70 text-sm max-w-sm">Step back into frame so your head, shoulders and hands are all visible, then resume whenever you're ready.</p>
             </>
           ) : (
-            <h3 className="text-3xl font-extrabold text-[var(--color-text)]">⏸ Paused</h3>
+            <h3 className="text-3xl font-extrabold text-white font-display">⏸ Paused</h3>
           )}
           <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={togglePause}
-              className="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-[var(--color-text)] font-extrabold rounded-2xl border border-violet-500/40 shadow-lg transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-violet-500/50"
-            >
+            <Button variant="primary" size="lg" onClick={togglePause}>
               {autoPaused ? "▶ I'm back — Resume" : '▶ Resume'}
-            </button>
-            <button
-              onClick={restartMission}
-              className="px-8 py-4 bg-[var(--color-surface-strong)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text)] font-bold rounded-2xl border border-[var(--color-border-strong)] transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-white/30"
-            >
+            </Button>
+            <Button variant="ghost" size="lg" onClick={restartMission}>
               🔁 Restart Mission
-            </button>
-            <button
-              onClick={props.onQuit}
-              className="px-8 py-4 bg-[var(--color-surface-strong)] hover:bg-[var(--color-surface-hover)] text-[var(--color-text)] font-bold rounded-2xl border border-[var(--color-border-strong)] transition-all duration-300 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-white/30"
-            >
+            </Button>
+            <Button variant="ghost" size="lg" onClick={props.onQuit}>
               Quit to Dashboard
-            </button>
+            </Button>
           </div>
         </div>
       )}

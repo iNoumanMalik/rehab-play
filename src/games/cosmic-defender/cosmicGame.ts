@@ -1505,6 +1505,9 @@ export class CosmicScene extends Scene {
   }
 
   private renderWeaponHud(ctx: CanvasRenderingContext2D): void {
+    // A backdrop for legibility over a busy starfield — kept clear of the
+    // FeedbackOverlay/TrackingStatusBanner bands above it.
+    Renderer.drawHudBand(ctx, this.width, this.height - 74, 74);
     const y = this.height - 14;
     const items: { label: string; on: boolean; color: string }[] = [
       { label: this.plasmaUnlocked ? 'PLASMA' : 'BLASTER', on: true, color: this.plasmaUnlocked ? '#FFAB40' : '#40C4FF' },

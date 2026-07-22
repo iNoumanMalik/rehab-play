@@ -1,6 +1,9 @@
 import type { JointAngles, MovementData } from './pose';
+import type { Tone } from './theme';
 
-export type GameId = 'butterfly-rescue' | 'fruit-harvest' | 'crystal-guardian' | 'cosmic-defender';
+export type GameId =
+  | 'butterfly-rescue' | 'fruit-harvest' | 'crystal-guardian' | 'cosmic-defender'
+  | 'fruit-slice' | 'wall-painter' | 'tilt-maze';
 
 export interface GameMeta {
   id: GameId;
@@ -9,10 +12,8 @@ export interface GameMeta {
   tag: string;
   icon: string;
   rehabFocus: string;
-  gradient: string;
-  border: string;
-  tagColor: string;
-  hoverGlow: string;
+  /** A single restrained accent tone for this card's tag badge — cards share one calm chrome, not a rainbow of gradients. */
+  tone: Tone;
 }
 
 export interface GameStats {
