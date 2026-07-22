@@ -238,9 +238,7 @@ export class ButterflyScene extends Scene {
 
     // Kept below the DOM HUD strip AND the ObjectiveBanner (top ~12-98px);
     // combo is shown by the shared ComboDisplay overlay, not duplicated here.
-    Renderer.drawHudBand(ctx, this.width, 96, 48);
-    Renderer.drawText(ctx, `Score: ${this.score}`, 16, 108, { size: 18, align: 'left' });
-    Renderer.drawText(ctx, `Level ${this.levelMgr.currentLevel}`, this.width - 16, 108, { size: 13, color: '#88ccff', align: 'right' });
+    Renderer.drawTag(ctx, `Level ${this.levelMgr.currentLevel}`, this.width - 16, 96, { color: '#88ccff', align: 'right' });
     Renderer.drawProgressBar(ctx, this.width - 130, this.height - 26, 110, 6, this.flow, warn());
     Renderer.drawText(ctx, '✨ Flow', this.width - 130, this.height - 38, { size: 11, color: '#ccc', align: 'left' });
   }

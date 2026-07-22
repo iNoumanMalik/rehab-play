@@ -329,10 +329,7 @@ export class TiltMazeScene extends Scene {
 
     // Kept below the DOM HUD strip AND the ObjectiveBanner (top ~12-98px);
     // the feedback text is left to the shared FeedbackOverlay, not duplicated here.
-    Renderer.drawHudBand(ctx, this.width, 96, 66);
-    Renderer.drawText(ctx, `Score: ${this.score}`, 16, 108, { size: 18, align: 'left' });
-    Renderer.drawText(ctx, lvl.name, this.width - 16, 108, { size: 13, align: 'right', color: '#88ccff' });
-    Renderer.drawText(ctx, '❤️'.repeat(Math.max(0, this.lives)), this.width / 2, 136, { size: 16, align: 'center' });
+    Renderer.drawTag(ctx, lvl.name, this.width - 16, 96, { align: 'right', color: '#88ccff' });
   }
 
   getState(): SceneState {

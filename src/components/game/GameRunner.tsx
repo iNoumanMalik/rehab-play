@@ -71,7 +71,7 @@ export function GameRunner(props: GameRunnerProps) {
   const [autoPaused, setAutoPaused] = useState(false);
   const [over, setOver] = useState(false);
   const [durationChoice, setDurationChoice] = useState<DurationChoice>('unlimited');
-  const [hud, setHud] = useState<{ elapsedSec: number; durationSec: number | null; health: SceneState['health'] | null }>({ elapsedSec: 0, durationSec: null, health: null });
+  const [hud, setHud] = useState<{ score: number; elapsedSec: number; durationSec: number | null; health: SceneState['health'] | null }>({ score: 0, elapsedSec: 0, durationSec: null, health: null });
   const [objective, setObjective] = useState('');
 
   // Mutable loop state (read inside the stable rAF closures).
@@ -116,7 +116,7 @@ export function GameRunner(props: GameRunnerProps) {
     setPaused(false);
     setAutoPaused(false);
     setObjective('');
-    setHud({ elapsedSec: 0, durationSec, health: null });
+    setHud({ score: 0, elapsedSec: 0, durationSec, health: null });
     analyticsService.startSession(gameId);
     phaseRef.current = 'playing';
     setPhase('playing');
@@ -266,7 +266,7 @@ export function GameRunner(props: GameRunnerProps) {
 
       hudTickRef.current++;
       if (hudTickRef.current % 12 === 0) {
-        setHud({ elapsedSec: Math.floor(elapsedRef.current), durationSec: sessionDurationRef.current, health: s.health ?? null });
+        setHud({ score: s.score, elapsedSec: Math.floor(elapsedRef.current), durationSec: sessionDurationRef.current, health: s.health ?? null });
       }
     };
 
@@ -322,14 +322,17 @@ export function GameRunner(props: GameRunnerProps) {
 
       {phase === 'playing' && !over && (
         <>
-          <HUD elapsedSec={hud.elapsedSec} durationSec={hud.durationSec} health={hud.health ?? null} paused={paused} onTogglePause={togglePause} />
+          <HUD score={hud.score} elapsedSec={hud.elapsedSec} durationSec={hud.durationSec} health={hud.health ?? null} paused={paused} onTogglePause={togglePause} />
           <ObjectiveBanner text={objective} />
         </>
       )}
 
       {phase === 'intro' && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/60 backdrop-blur-sm text-center px-6">
-          <div className="max-w-md">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/80 backdrop-blur-sm text-center px-6">
+          {/* A solid panel behind the content, independent of the outer scrim —
+              the camera feed's brightness varies room to room, so this is a
+              second layer of contrast insurance, not just a darker scrim. */}
+          <div className="max-w-md bg-black/40 border border-white/10 rounded-card px-6 py-8 sm:px-8">
             <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-2 font-display">{registration.exercise.name}</h3>
             <p className="text-on-dark-accent text-sm font-semibold mb-1">🎯 {registration.exercise.rehabFocus}</p>
             <p className="text-white/70 text-sm leading-relaxed">
@@ -338,6 +341,7 @@ export function GameRunner(props: GameRunnerProps) {
           </div>
 
           <Segmented
+            onDark
             label="Session Length"
             options={DURATION_OPTIONS}
             value={durationChoice}
@@ -367,7 +371,7 @@ export function GameRunner(props: GameRunnerProps) {
       )}
 
       {paused && (
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-black/70 backdrop-blur-md text-center px-6" role="status" aria-live="polite">
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-black/80 backdrop-blur-md text-center px-6" role="status" aria-live="polite">
           {autoPaused ? (
             <>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-white font-display">🧍 We lost sight of you</h3>

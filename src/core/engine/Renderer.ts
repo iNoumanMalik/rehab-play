@@ -87,6 +87,25 @@ export class Renderer {
     ctx.fillRect(0, y, w, h);
   }
 
+  /** A small pill-backed label (e.g. "Level 3") — for a single lone piece of
+   * canvas HUD text, where a full-width drawHudBand would be a wide near-empty
+   * bar for no reason. Sized to fit the text, not the canvas width. */
+  static drawTag(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, opts: {
+    size?: number; color?: string; align?: CanvasTextAlign; bg?: string;
+  } = {}): void {
+    const { size = 13, color = '#88ccff', align = 'right', bg = 'rgba(0,0,0,0.4)' } = opts;
+    ctx.font = `bold ${size}px system-ui, sans-serif`;
+    const padX = 10, padY = 5;
+    const textWidth = ctx.measureText(text).width;
+    const boxW = textWidth + padX * 2;
+    const boxH = size + padY * 2;
+    const boxX = align === 'right' ? x - boxW : align === 'center' ? x - boxW / 2 : x;
+    ctx.fillStyle = bg;
+    Renderer.roundedRect(ctx, boxX, y - padY, boxW, boxH, boxH / 2);
+    ctx.fill();
+    Renderer.drawText(ctx, text, x, y, { size, color, align });
+  }
+
   static drawHandCursor(ctx: CanvasRenderingContext2D, x: number, y: number, r = 35): void {
     Renderer.drawGlow(ctx, x, y, r * 1.5, '#ffffff');
     ctx.beginPath();

@@ -297,9 +297,7 @@ export class CrystalScene extends Scene {
     } else {
       // Kept below the DOM HUD strip AND the ObjectiveBanner (top ~12-98px);
       // combo is shown by the shared ComboDisplay overlay, not duplicated here.
-      Renderer.drawHudBand(ctx, this.width, 96, 52);
-      Renderer.drawText(ctx, `Score: ${this.score}`, 16, 108, { size: 20, align: 'left' });
-      Renderer.drawText(ctx, `Reps: ${this.reps}  ·  Wave ${this.levelMgr.currentLevel}`, 16, 132, { size: 13, color: '#aaa', align: 'left' });
+      Renderer.drawTag(ctx, `Reps: ${this.reps}  ·  Wave ${this.levelMgr.currentLevel}`, 16, 96, { color: '#ccc', align: 'left' });
     }
     ctx.restore();
   }

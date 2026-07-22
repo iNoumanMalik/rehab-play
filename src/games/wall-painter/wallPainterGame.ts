@@ -334,17 +334,15 @@ export class WallPainterScene extends Scene {
       }
     }
 
-    // Kept below the DOM HUD strip AND the ObjectiveBanner (top ~12-98px);
+    // Kept below the DOM HUD strip AND the ObjectiveBanner (top ~12-84px);
     // the "carrying" label is left to the ObjectiveBanner (which already
     // states it) — only the at-a-glance fill gauge is duplicated here.
     const done = this.targets.filter(t => t.done).length;
-    Renderer.drawHudBand(ctx, this.width, 96, 48);
-    Renderer.drawText(ctx, `Score: ${this.score}`, 16, 108, { size: 18, align: 'left' });
-    Renderer.drawText(ctx, this.level().name, this.width - 16, 108, { size: 13, align: 'right', color: '#88ccff' });
-    Renderer.drawText(ctx, `${done}/${this.targets.length} matched`, this.width / 2, 108, { size: 13, align: 'center', color: '#ccc' });
+    Renderer.drawTag(ctx, this.level().name, this.width - 16, 96, { align: 'right', color: '#88ccff' });
+    Renderer.drawTag(ctx, `${done}/${this.targets.length} matched`, this.width / 2, 96, { align: 'center', color: '#ccc' });
 
     if (this.loadedColor) {
-      Renderer.drawProgressBar(ctx, this.width / 2 - 50, 132, 100, 5, this.loadedAmount, CHANNEL_COLOR[this.loadedColor]);
+      Renderer.drawProgressBar(ctx, this.width / 2 - 50, 120, 100, 5, this.loadedAmount, CHANNEL_COLOR[this.loadedColor]);
     }
   }
 

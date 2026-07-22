@@ -14,7 +14,7 @@ const C = 2 * Math.PI * R;
 export function CalibrationOverlay({ prompt, stepProgress, capturing, tracked }: CalibrationOverlayProps) {
   const [{ reducedMotion }] = useSettings();
   return (
-    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/55 backdrop-blur-sm text-center px-6"
+    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-black/75 backdrop-blur-sm text-center px-6"
       role="status" aria-live="polite">
       <div className="relative w-32 h-32">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
@@ -33,7 +33,7 @@ export function CalibrationOverlay({ prompt, stepProgress, capturing, tracked }:
         </div>
       </div>
 
-      <div className="max-w-md">
+      <div className="max-w-md bg-black/40 border border-white/10 rounded-card px-6 py-6 sm:px-8">
         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-on-dark-accent mb-2">Calibrating your range</p>
         <p className="text-lg sm:text-xl font-bold text-white leading-snug">{prompt}</p>
         {!tracked && (

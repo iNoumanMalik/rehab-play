@@ -315,12 +315,9 @@ export class FruitSliceScene extends Scene {
       ctx.globalAlpha = 1;
     }
 
-    // Kept below the DOM HUD strip AND the ObjectiveBanner (top ~12-98px,
-    // the banner can stretch wide) so canvas text never sits under those;
+    // Kept below the DOM HUD strip AND the ObjectiveBanner (top ~12-84px);
     // combo is shown by the shared ComboDisplay overlay, not duplicated here.
-    Renderer.drawHudBand(ctx, this.width, 96, 48);
-    Renderer.drawText(ctx, `Score: ${this.score}`, 16, 108, { size: 18, align: 'left' });
-    Renderer.drawText(ctx, `Level ${this.levelMgr.currentLevel}`, this.width - 16, 108, { size: 13, align: 'right', color: '#88ccff' });
+    Renderer.drawTag(ctx, `Level ${this.levelMgr.currentLevel}`, this.width - 16, 96, { align: 'right', color: '#88ccff' });
     Renderer.drawProgressBar(ctx, this.width / 2 - 60, 110, 120, 8, this.slicesThisLevel / SLICES_PER_LEVEL, warn());
   }
 

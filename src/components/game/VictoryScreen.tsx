@@ -32,9 +32,11 @@ const STATS_CONFIG: { key: keyof GameStats; label: string; suffix?: string; tone
 ];
 
 /**
- * React overlay shown on the Stage when a session ends — replaces the old
- * canvas-drawn "Session Complete" text with a real, accessible recap: stats,
- * XP earned (with a level-up call-out), and any achievements unlocked.
+ * React overlay shown on the Stage when a session ends. Sits on top of the
+ * live camera feed like GameRunner's intro/pause/calibration overlays — it
+ * intentionally uses fixed light-on-dark styling throughout (not theme-
+ * reactive tokens), since this is a fixed-black scrim over unpredictable
+ * camera video, not app chrome (see Stage.tsx).
  */
 export function VictoryScreen({ outcome, stats, reward, achievements, onPlayAgain, onBack }: VictoryScreenProps) {
   const xpPct = reward ? Math.min(1, reward.xpIntoLevel / Math.max(1, reward.xpForNextLevel)) : 0;
@@ -50,14 +52,14 @@ export function VictoryScreen({ outcome, stats, reward, achievements, onPlayAgai
     <div
       role="dialog"
       aria-label={copy.headline}
-      className="absolute inset-0 z-40 flex items-center justify-center bg-black/75 backdrop-blur-md px-4 py-6 overflow-y-auto"
+      className="absolute inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-md px-4 py-6 overflow-y-auto"
     >
-      <div className="w-full max-w-lg bg-surface-strong border border-border-strong rounded-card shadow-3 p-6 sm:p-8 text-center animate-[popIn_0.35s_ease-out]">
+      <div className="w-full max-w-lg bg-black/55 border border-white/10 rounded-card shadow-3 p-6 sm:p-8 text-center animate-[popIn_0.35s_ease-out]">
         <div className="text-5xl mb-2">{copy.emoji}</div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-text font-display mb-1">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-display mb-1">
           {copy.headline}
         </h2>
-        <p className="text-muted text-sm mb-6">
+        <p className="text-white/70 text-sm mb-6">
           {copy.subcopy}
         </p>
 
@@ -68,22 +70,23 @@ export function VictoryScreen({ outcome, stats, reward, achievements, onPlayAgai
               value={`${stats[key]}${suffix ?? ''}`}
               label={label}
               tone={tone}
+              onDark
             />
           ))}
         </div>
 
         {reward && (
-          <div className="bg-surface border border-border-strong rounded-card p-4 mb-5 text-left">
+          <div className="bg-black/40 border border-white/10 rounded-card p-4 mb-5 text-left">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-bold text-accent-text">
+              <span className="text-sm font-bold text-on-dark-accent">
                 {reward.leveledUp ? `⬆️ Level ${reward.level}!` : `Level ${reward.level}`}
               </span>
-              <span className="text-sm font-bold text-success-text">+{reward.xpEarned} XP</span>
+              <span className="text-sm font-bold text-on-dark-success">+{reward.xpEarned} XP</span>
             </div>
-            <div className="w-full h-2 rounded-full bg-surface-hover overflow-hidden">
+            <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
               <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${xpPct * 100}%` }} />
             </div>
-            <div className="flex items-center justify-between mt-2 text-[11px] text-faint">
+            <div className="flex items-center justify-between mt-2 text-[11px] text-white/60">
               <span>{reward.xpIntoLevel} / {reward.xpForNextLevel} XP to next level</span>
               {reward.streakDays > 0 && <span>🔥 {reward.streakDays}-day streak</span>}
             </div>
@@ -92,10 +95,10 @@ export function VictoryScreen({ outcome, stats, reward, achievements, onPlayAgai
 
         {achievements.length > 0 && (
           <div className="mb-6">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-faint mb-2 text-left">Achievements Unlocked</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/60 mb-2 text-left">Achievements Unlocked</p>
             <div className="flex flex-wrap gap-2">
               {achievements.map(a => (
-                <Badge key={a.id} tone="warning" className="pl-1.5 pr-3 py-1">
+                <Badge key={a.id} tone="warning" onDark className="pl-1.5 pr-3 py-1">
                   <span className="text-base">{a.icon}</span>
                   <span>{a.title}</span>
                 </Badge>
@@ -104,13 +107,13 @@ export function VictoryScreen({ outcome, stats, reward, achievements, onPlayAgai
           </div>
         )}
 
-        <p className="text-[11px] text-faint font-semibold mb-4">✓ Progress saved</p>
+        <p className="text-[11px] text-white/60 font-semibold mb-4">✓ Progress saved</p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button variant="primary" size="lg" onClick={onPlayAgain}>
             🔁 Play Again
           </Button>
-          <Button variant="secondary" size="lg" onClick={onBack}>
+          <Button variant="ghost" size="lg" onClick={onBack}>
             Back to Dashboard
           </Button>
         </div>

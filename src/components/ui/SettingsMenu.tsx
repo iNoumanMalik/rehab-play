@@ -27,12 +27,18 @@ function Switch({ label, description, checked, onChange, disabled }: {
   );
 }
 
-export function Segmented<T extends string>({ label, options, value, onChange }: {
+export function Segmented<T extends string>({ label, options, value, onChange, onDark = false }: {
   label: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void;
+  /** Use fixed light-on-dark styling instead of theme-reactive tokens — for
+   * placements on the app's fixed-black camera scrims (e.g. GameRunner's
+   * intro screen), which don't follow the Theme setting (see Stage.tsx). The
+   * default theme-reactive styling is only correct on theme-reactive surfaces
+   * like the Settings panel itself. */
+  onDark?: boolean;
 }) {
   return (
     <div className="py-2.5">
-      <span className="block text-sm font-semibold text-[var(--color-text)] mb-2">{label}</span>
+      <span className={`block text-sm font-semibold mb-2 ${onDark ? 'text-white' : 'text-[var(--color-text)]'}`}>{label}</span>
       <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
         {options.map(opt => (
           <button
@@ -43,7 +49,9 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
             className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
               value === opt.value
                 ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white'
-                : 'bg-[var(--color-surface-strong)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]'
+                : onDark
+                  ? 'bg-white/10 border-white/20 text-white/70 hover:bg-white/15'
+                  : 'bg-[var(--color-surface-strong)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]'
             }`}
           >
             {opt.label}
