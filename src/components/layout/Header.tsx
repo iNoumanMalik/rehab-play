@@ -8,12 +8,16 @@ interface HeaderProps {
   videoReady: boolean;
   isReady: boolean;
   onToggleCamera: () => void;
+  /** Camera on/off + status badges only make sense while a session is active
+   * — hidden on marketing pages so the nav doesn't ask visitors to think
+   * about a webcam before they've decided to try anything. */
+  showCameraControls: boolean;
 }
 
-export function Header({ isCameraOn, videoReady, isReady, onToggleCamera }: HeaderProps) {
+export function Header({ isCameraOn, videoReady, isReady, onToggleCamera, showCameraControls }: HeaderProps) {
   const [{ reducedMotion }] = useSettings();
   return (
-    <header className="relative z-20 bg-bg/80 backdrop-blur-xl border-b border-border sticky top-0">
+    <header className="relative z-20 bg-bg/80 backdrop-blur-xl border-b border-border top-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
@@ -35,41 +39,51 @@ export function Header({ isCameraOn, videoReady, isReady, onToggleCamera }: Head
 
           <div className="flex items-center gap-3">
             <Link
+              to="/trainer"
+              className="hidden sm:inline-flex items-center px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold text-muted hover:text-text hover:bg-surface-hover transition-all duration-[var(--dur-base)] outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus-ring)]/40"
+            >
+              Guided Trainer
+            </Link>
+            <Link
               to="/progress"
               className="hidden sm:inline-flex items-center px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold text-muted hover:text-text hover:bg-surface-hover transition-all duration-[var(--dur-base)] outline-none focus-visible:ring-4 focus-visible:ring-[var(--color-focus-ring)]/40"
             >
               Progress
             </Link>
-            <button
-              onClick={onToggleCamera}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold border transition-all duration-[var(--dur-base)] shadow-1 cursor-pointer focus-visible:ring-4 focus-visible:ring-[var(--color-focus-ring)]/40 outline-none ${
-                isCameraOn
-                  ? 'bg-accent/15 hover:bg-accent/25 text-accent-text border-accent/30 hover:border-accent/50'
-                  : 'bg-danger/15 hover:bg-danger/25 text-danger border-danger/30 hover:border-danger/50'
-              }`}
-              aria-label={isCameraOn ? 'Turn camera off' : 'Turn camera on'}
-            >
-              {isCameraOn ? '📹 Camera On' : '📹 Camera Off'}
-            </button>
+            {showCameraControls && (
+              <>
+                <button
+                  onClick={onToggleCamera}
+                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-bold border transition-all duration-[var(--dur-base)] shadow-1 cursor-pointer focus-visible:ring-4 focus-visible:ring-[var(--color-focus-ring)]/40 outline-none ${
+                    isCameraOn
+                      ? 'bg-accent/15 hover:bg-accent/25 text-accent-text border-accent/30 hover:border-accent/50'
+                      : 'bg-danger/15 hover:bg-danger/25 text-danger border-danger/30 hover:border-danger/50'
+                  }`}
+                  aria-label={isCameraOn ? 'Turn camera off' : 'Turn camera on'}
+                >
+                  {isCameraOn ? '📹 Camera On' : '📹 Camera Off'}
+                </button>
 
-            {isCameraOn && videoReady && (
-              <span className="hidden sm:inline-flex">
-                <Badge tone="success">
-                  <span className="relative w-2.5 h-2.5">
-                    <span className="absolute inset-0 bg-success rounded-full animate-ping opacity-75" />
-                    <span className="relative block w-2.5 h-2.5 bg-success rounded-full" />
+                {isCameraOn && videoReady && (
+                  <span className="hidden sm:inline-flex">
+                    <Badge tone="success">
+                      <span className="relative w-2.5 h-2.5">
+                        <span className="absolute inset-0 bg-success rounded-full animate-ping opacity-75" />
+                        <span className="relative block w-2.5 h-2.5 bg-success rounded-full" />
+                      </span>
+                      Camera Active
+                    </Badge>
                   </span>
-                  Camera Active
-                </Badge>
-              </span>
-            )}
-            {isCameraOn && videoReady && !isReady && (
-              <span className="hidden sm:inline-flex animate-pulse">
-                <Badge tone="warning">
-                  <span className="w-2.5 h-2.5 bg-warning rounded-full" />
-                  Loading Pose
-                </Badge>
-              </span>
+                )}
+                {isCameraOn && videoReady && !isReady && (
+                  <span className="hidden sm:inline-flex animate-pulse">
+                    <Badge tone="warning">
+                      <span className="w-2.5 h-2.5 bg-warning rounded-full" />
+                      Loading Pose
+                    </Badge>
+                  </span>
+                )}
+              </>
             )}
             <SettingsMenu />
           </div>

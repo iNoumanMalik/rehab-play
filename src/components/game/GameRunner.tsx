@@ -96,7 +96,12 @@ export function GameRunner(props: GameRunnerProps) {
   const untrackedPlayMsRef = useRef(0);
   const sessionDurationRef = useRef<number | null>(null);
 
-  const AUTO_PAUSE_MS = 2000;
+  // How long tracking can be continuously lost during play before the game
+  // auto-pauses with "We lost sight of you". Deliberately generous (10s, not
+  // a snappy 1-2s) — brief real-world dips (leaning out of frame, a quick
+  // stumble, a moment of poor lighting) shouldn't slam the brakes on the
+  // session; only a genuinely sustained loss should.
+  const AUTO_PAUSE_MS = 10000;
 
   const startPlaying = () => {
     const canvas = canvasRef.current;

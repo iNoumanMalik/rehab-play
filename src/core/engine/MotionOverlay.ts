@@ -138,8 +138,11 @@ export class MotionOverlay {
       const p = landmarkToScreen(lm, idx, w, h);
       const isWrist = idx === LANDMARK.LEFT_WRIST || idx === LANDMARK.RIGHT_WRIST;
       const isActiveWrist = isWrist && ((idx === LANDMARK.LEFT_WRIST) === activeIsLeft);
-      const pulse = 1 + Math.sin(this.t * 5 + idx) * 0.08;
-      const r = (isWrist ? (isActiveWrist ? 11 : 8) : 6) * pulse;
+      // Fixed radius, no pulsing — a continuous per-joint size oscillation
+      // here reads as "the tracking is unstable/vibrating", not as a nice
+      // effect, which actively undermines trust in a rehab tool. Real
+      // movement is already visible via the joint's own position changing.
+      const r = isWrist ? (isActiveWrist ? 11 : 8) : 6;
 
       ctx.save();
       ctx.globalAlpha = isWrist ? 0.9 : 0.55;

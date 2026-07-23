@@ -9,6 +9,7 @@ import { FeedbackOverlay } from './components/game/FeedbackOverlay';
 import { ComboDisplay } from './components/game/ComboDisplay';
 import { VictoryScreen } from './components/game/VictoryScreen';
 import { TrackingStatusBanner } from './components/game/TrackingStatusBanner';
+import { PoseDebugPanel } from './components/pose/PoseDebugPanel';
 import { ToastStack } from './components/ui/ToastStack';
 import { CaptionBar } from './components/ui/CaptionBar';
 import { Onboarding } from './components/onboarding/Onboarding';
@@ -36,8 +37,14 @@ function App() {
   const navigate = useNavigate();
   const playMatch = matchPath('/play/:gameId', location.pathname);
   const currentGameId = playMatch?.params.gameId ?? null;
+  // The landing page owns full-bleed marketing sections (hero, carousel) —
+  // every other route (progress, in-game) keeps the constrained app container.
+  const isLandingRoute = location.pathname === '/';
 
-  const [isCameraOn, setIsCameraOn] = useState(true);
+  // Camera stays off until the user actually commits to a session — a
+  // marketing homepage shouldn't force a permission prompt before the pitch
+  // has even been read. startGame() is what flips it on.
+  const [isCameraOn, setIsCameraOn] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [replayToken, setReplayToken] = useState(0);
@@ -101,6 +108,7 @@ function App() {
     setIsCameraOn(prev => {
       const next = !prev;
       if (!next) {
+        if (currentGameId) session.endSession();
         navigate('/');
         setVideoReady(false);
       }
@@ -108,11 +116,17 @@ function App() {
     });
   };
 
-  const startGame = (gameId: string) => navigate(`/play/${gameId}`);
+  // Starting a game is the one moment that requests the camera — everything
+  // upstream of this (hero, gallery browsing) is camera-free marketing content.
+  const startGame = (gameId: string) => {
+    setIsCameraOn(true);
+    navigate(`/play/${gameId}`);
+  };
   const backToDashboard = () => navigate('/');
   const playAgain = () => setReplayToken(t => t + 1);
   const quitToDashboard = () => {
     session.endSession();
+    setIsCameraOn(false);
     backToDashboard();
   };
 
@@ -120,7 +134,7 @@ function App() {
   const outletContext: AppOutletContext = { games, session, startGame, backToDashboard, playAgain };
 
   return (
-    <div className="relative min-h-screen bg-bg text-text overflow-x-hidden">
+    <div className="relative min-h-screen bg-bg text-text">
       {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
       <ToastStack />
       <CaptionBar />
@@ -134,10 +148,11 @@ function App() {
         videoReady={videoReady}
         isReady={isReady}
         onToggleCamera={toggleCamera}
+        showCameraControls={Boolean(currentGameId)}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
-        {!isCameraOn ? (
+      <main className={isLandingRoute ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10'}>
+        {currentGameId && !isCameraOn ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 bg-surface border border-border rounded-card p-8 sm:p-12 shadow-2 text-center max-w-3xl mx-auto">
             <div className="w-24 h-24 bg-danger/10 border border-danger/30 rounded-full flex items-center justify-center text-danger text-4xl">
               🚫
@@ -154,7 +169,7 @@ function App() {
               </Button>
             </div>
           </div>
-        ) : (
+        ) : isCameraOn ? (
           <>
             <Stage
               isCameraOn={isCameraOn}
@@ -170,6 +185,7 @@ function App() {
               onCameraError={setCameraError}
             >
               {videoReady && isReady && <TrackingStatusBanner health={trackingHealth} />}
+              {import.meta.env.DEV && videoReady && isReady && <PoseDebugPanel poseDataRef={poseDataRef} />}
               {currentGameId && (
                 <>
                   <GameRunner
@@ -202,6 +218,8 @@ function App() {
 
             <Outlet context={outletContext} />
           </>
+        ) : (
+          <Outlet context={outletContext} />
         )}
       </main>
     </div>

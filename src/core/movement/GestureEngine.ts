@@ -50,6 +50,7 @@ const LOOKUP_ENTER = 0.32; // nose above ear line, in ear-distance units
 const LOOKUP_EXIT = 0.18;
 const ROTATION_MIN_RADIUS = 0.42; // arm must be lifted away from the body
 const ROTATION_MAX_STEP_RAD = 1.4; // ignore tracking jumps
+const AIM_SWITCH_MARGIN = 0.1; // the other arm must clearly overtake, not just edge past, to switch aim hands
 
 const EMPTY: GestureFrame = {
   tracked: false, aim: null, aimSide: 'right', reach: 0, pushes: [], doublePush: false,
@@ -81,8 +82,8 @@ function wrapAngle(a: number): number {
  * Turns pose landmarks into discrete, forgiving gameplay gestures. Continuous
  * signals (lean, yaw, reach) are read straight off the already-one-euro-smoothed
  * landmarks; event gestures (push, double push) use velocity thresholds with
- * cooldowns; state gestures (cross-body, overhead, look-up) use hysteresis so
- * jitter at the boundary never flickers them.
+ * cooldowns; state gestures (cross-body, overhead, look-up, aim side) use
+ * hysteresis so jitter at the boundary never flickers them.
  */
 export class GestureEngine {
   private elapsed = 0;
@@ -91,6 +92,7 @@ export class GestureEngine {
   private lookUpState = false;
   private overheadHold = 0;
   private turns = 0;
+  private aimSideState: HandSide = 'right';
 
   reset(): void {
     this.elapsed = 0;
@@ -99,6 +101,7 @@ export class GestureEngine {
     this.lookUpState = false;
     this.overheadHold = 0;
     this.turns = 0;
+    this.aimSideState = 'right';
   }
 
   update(dt: number, pose: PoseData | null, canvasW: number, canvasH: number): GestureFrame {
@@ -130,9 +133,18 @@ export class GestureEngine {
     // Dominant-arm personalization only resolves near-ties (a small bias) —
     // a clearly-more-extended arm always wins regardless of preference, so
     // aiming still feels responsive to whichever arm the player actually moved.
+    // Hysteresis (AIM_SWITCH_MARGIN) keeps this sticky to whichever hand is
+    // already aiming — without it, ordinary pose-tracking jitter is enough to
+    // flip the aim hand back and forth even when only one arm is moving.
     const dominantArm = settingsStore.get().dominantArm;
     const bias = dominantArm === 'right' ? 0.04 : dominantArm === 'left' ? -0.04 : 0;
-    const aimSide: HandSide = extR + bias >= extL ? 'right' : 'left';
+    const rightScore = extR + bias;
+    if (this.aimSideState === 'right') {
+      if (extL > rightScore + AIM_SWITCH_MARGIN) this.aimSideState = 'left';
+    } else {
+      if (rightScore > extL + AIM_SWITCH_MARGIN) this.aimSideState = 'right';
+    }
+    const aimSide: HandSide = this.aimSideState;
     const reach = Math.max(extL, extR);
     const aimPt = wristToScreen(predicted, aimSide, canvasW, canvasH);
 

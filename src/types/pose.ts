@@ -26,6 +26,33 @@ export interface MovementData {
   leftReachDistance: number;
 }
 
+/** Per-frame stabilizer state for one tracked landmark — powers the pose debug panel. */
+export interface LandmarkDebugInfo {
+  index: number;
+  label: string;
+  visibility: number;
+  /** Held at its previous stable position this frame because visibility dropped below threshold. */
+  frozen: boolean;
+  /** Raw position moved further than a plausible joint speed allows — step was clamped. */
+  clamped: boolean;
+  /** This landmark's left/right symmetric pair was swap-corrected this frame. */
+  swapped: boolean;
+}
+
+/** Per-frame bone-length constraint state for one limb segment — powers the pose debug panel. */
+export interface BoneDebugInfo {
+  label: string;
+  /** current length / learned reference length — 1.0 is "as expected". */
+  ratio: number;
+  /** true if this segment was rescaled back into its plausible range this frame. */
+  corrected: boolean;
+}
+
+export interface StabilizerDebugState {
+  landmarks: LandmarkDebugInfo[];
+  bones: BoneDebugInfo[];
+}
+
 export interface PoseData {
   landmarks: PoseLandmark[];
   smoothLandmarks: PoseLandmark[];
@@ -35,6 +62,8 @@ export interface PoseData {
   movement: MovementData;
   feedback: string[];
   confidence: number;
+  /** Landmark/bone stabilizer diagnostics — for the pose debug panel. */
+  debug?: StabilizerDebugState;
 }
 
 export const LANDMARK = {

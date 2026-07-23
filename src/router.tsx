@@ -3,6 +3,7 @@ import App from './App';
 import { LandingPage } from './pages/LandingPage';
 import { PlayChrome } from './pages/PlayChrome';
 import { ProgressPage } from './pages/ProgressPage';
+import { GuidedTrainerPage } from './pages/GuidedTrainerPage';
 
 /**
  * App is the persistent layout route: it owns the camera stream, MediaPipe
@@ -20,4 +21,8 @@ export const router = createBrowserRouter([
       { path: 'progress', element: <ProgressPage /> },
     ],
   },
+  // Standalone full-screen route — deliberately outside App's layout/camera
+  // machinery so it owns its own webcam preview and isn't padded by the
+  // shared header/container chrome.
+  { path: '/trainer', element: <GuidedTrainerPage /> },
 ]);
