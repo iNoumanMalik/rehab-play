@@ -1,13 +1,11 @@
-import { useWebcamPreview } from './useWebcamPreview';
-
 interface WebcamPiPProps {
-  active: boolean;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  ready: boolean;
+  error: string | null;
 }
 
 /** Small Zoom/Meet-style self-view in the corner — keeps the avatar as the focal point. */
-export function WebcamPiP({ active }: WebcamPiPProps) {
-  const { videoRef, error, ready } = useWebcamPreview(active);
-
+export function WebcamPiP({ videoRef, ready, error }: WebcamPiPProps) {
   return (
     <div className="absolute top-1/2 -translate-y-1/2 right-5 w-36 sm:w-44 aspect-[4/3] rounded-2xl overflow-hidden border-2 border-white/15 shadow-2 bg-black/60 backdrop-blur-sm">
       <video

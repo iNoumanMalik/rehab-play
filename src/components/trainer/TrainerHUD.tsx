@@ -8,16 +8,18 @@ const DURATION_OPTIONS: SessionDurationMinutes[] = [1, 3, 5];
 interface TrainerHUDProps {
   session: TrainerSession;
   onExit: () => void;
+  /** True once the user has gone still for a while during an active exercise. */
+  isIdle?: boolean;
 }
 
-export function TrainerHUD({ session, onExit }: TrainerHUDProps) {
+export function TrainerHUD({ session, onExit, isIdle = false }: TrainerHUDProps) {
   const { status } = session;
 
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col">
       <TopBar onExit={onExit} />
 
-      {status === 'running' || status === 'paused' ? <ActiveHUD session={session} /> : null}
+      {status === 'running' || status === 'paused' ? <ActiveHUD session={session} isIdle={isIdle} /> : null}
       {status === 'idle' && <StartOverlay onStart={session.start} />}
       {status === 'completed' && <CompletedOverlay session={session} />}
     </div>
@@ -94,13 +96,21 @@ function CompletedOverlay({ session }: { session: TrainerSession }) {
   );
 }
 
-function ActiveHUD({ session }: { session: TrainerSession }) {
+function ActiveHUD({ session, isIdle }: { session: TrainerSession; isIdle: boolean }) {
   const { totalRemainingSeconds, currentClip, nextClip, segmentIndex, segmentCount, completedCount, status } = session;
   const segmentProgress = 1 - session.segmentRemainingSeconds / SEGMENT_SECONDS;
   const overallProgress = segmentCount > 0 ? (segmentIndex + segmentProgress) / segmentCount : 0;
 
   return (
     <>
+      {status === 'running' && isIdle && (
+        <div className="pointer-events-none flex justify-center mt-3 sm:mt-4 px-4">
+          <div className="bg-warning/15 border border-warning/40 backdrop-blur-xl rounded-full px-5 py-2.5 text-warning text-xs sm:text-sm font-bold shadow-1 animate-pulse text-center">
+            👋 Still with us? Let's keep moving!
+          </div>
+        </div>
+      )}
+
       {/* Current / upcoming exercise + countdown */}
       <div className="pointer-events-none flex items-start justify-between px-5 sm:px-8 mt-4 sm:mt-6 gap-4">
         <div className="bg-black/45 backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-3.5 shadow-1">

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { voiceGuidance } from '../services/VoiceGuidanceService';
 import { EXERCISE_CLIPS, IDLE_CLIP, type TrainerClip } from './manifest';
 import { SEGMENT_SECONDS, type SessionDurationMinutes, type SessionStatus } from './types';
 
@@ -99,6 +100,30 @@ export function useTrainerSession(): TrainerSession {
   const nextClip = isActive ? (queue[segmentIndex + 1] ?? null) : null;
   const completedCount = status === 'completed' ? segmentCount : isActive ? segmentIndex : 0;
   const activeClipId = isActive ? currentClip.id : IDLE_CLIP.id;
+
+  // Announce each exercise transition aloud — the first one differently from
+  // the rest so it reads as "starting" rather than "next up" out of nowhere.
+  const announcedClipIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isActive) {
+      announcedClipIdRef.current = null;
+      return;
+    }
+    if (announcedClipIdRef.current !== currentClip.id) {
+      const isFirst = announcedClipIdRef.current === null;
+      announcedClipIdRef.current = currentClip.id;
+      voiceGuidance.speak(isFirst ? `Let's begin with ${currentClip.name}` : `Next up: ${currentClip.name}`);
+    }
+  }, [isActive, currentClip.id, currentClip.name]);
+
+  // Separately announce natural completion — distinct from the user hitting Stop.
+  const prevStatusRef = useRef<SessionStatus>('idle');
+  useEffect(() => {
+    if (prevStatusRef.current !== 'completed' && status === 'completed') {
+      voiceGuidance.speak('Great job — session complete!', { interrupt: true });
+    }
+    prevStatusRef.current = status;
+  }, [status]);
 
   return {
     status,
